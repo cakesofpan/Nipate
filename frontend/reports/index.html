@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nipate · Statistics Report Generator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════
+   BASE
+═══════════════════════════════════════ */
+:root {
+  --bg:        #f2efe8;
+  --paper:     #faf9f6;
+  --ink:       #16120e;
+  --ink2:      #4a4032;
+  --ink3:      #9a8f7e;
+  --rule:      #ddd8ce;
+  --red:       #b5311a;
+  --green:     #1d6840;
+  --amber:     #c47d0e;
+  --blue:      #1a4a72;
+  --teal:      #1a6060;
+  --purple:    #5b2d8e;
+  --surface:   #ffffff;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ═══════════════════════════════════════
+   SIDEBAR (controls)
+═══════════════════════════════════════ */
+#app { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 28px 24px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.sidebar-logo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding-bottom: 20px;
+}
+.sidebar-logo h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 26px;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+.sidebar-logo .sub {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: rgba(255,255,255,0.35);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+.ctrl-group { display: flex; flex-direction: column; gap: 8px; }
+.ctrl-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: rgba(255,255,255,0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+
+.ctrl-group select,
+.ctrl-group input[type="number"] {
+  width: 100%;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: var(--paper);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 5px;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+}
+.ctrl-group select:focus,
+.ctrl-group input:focus { border-color: rgba(255,255,255,0.35); }
+.ctrl-group select option { background: #16120e; }
+
+.checkbox-list { display: flex; flex-direction: column; gap: 6px; }
+.check-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  color: rgba(255,255,255,0.7);
+  user-select: none;
+}
+.check-item input { display: none; }
+.check-box {
+  width: 14px; height: 14px;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 3px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  transition: background 0.15s;
+}
+.check-item input:checked ~ .check-box {
+  background: var(--red);
+  border-color: var(--red);
+}
+.check-box::after {
+  content: '';
+  width: 7px; height: 5px;
+  border-left: 2px solid white;
+  border-bottom: 2px solid white;
+  transform: rotate(-45deg) translateY(-1px);
+  display: none;
+}
+.check-item input:checked ~ .check-box::after { display: block; }
+
+.btn-generate {
+  margin-top: auto;
+  background: var(--red);
+  color: white;
+  border: none;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 12px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  transition: background 0.2s, transform 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+.btn-generate:hover { background: #9a2916; transform: translateY(-1px); }
+.btn-generate:active { transform: translateY(0); }
+
+.btn-pdf {
+  background: transparent;
+  color: rgba(255,255,255,0.6);
+  border: 1px solid rgba(255,255,255,0.15);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  padding: 9px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+.btn-pdf:hover { border-color: rgba(255,255,255,0.35); color: white; }
+
+.sidebar-divider { border: none; border-top: 1px solid rgba(255,255,255,0.08); }
+
+/* ═══════════════════════════════════════
+   MAIN / REPORT AREA
+═══════════════════════════════════════ */
+.main {
+  flex: 1;
+  padding: 40px 44px 80px;
+  overflow-y: auto;
+}
+
+/* Empty state */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  height: 70vh;
+  color: var(--ink3);
+  text-align: center;
+}
+.empty-icon {
+  width: 64px; height: 64px;
+  border: 2px dashed var(--rule);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--rule);
+  font-size: 26px;
+}
+.empty-state h2 { font-size: 18px; color: var(--ink2); font-family: 'DM Serif Display', serif; }
+.empty-state p { font-size: 13px; max-width: 280px; }
+
+/* ═══════════════════════════════════════
+   REPORT DOCUMENT
+═══════════════════════════════════════ */
+#report-doc { display: none; }
+
+/* Cover */
+.rpt-cover {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-top: 5px solid var(--ink);
+  padding: 40px 44px 32px;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+.rpt-cover::after {
+  content: 'NIPATE';
+  position: absolute;
+  right: -8px; top: 12px;
+  font-family: 'DM Serif Display', serif;
+  font-size: 120px;
+  font-weight: 900;
+  color: rgba(0,0,0,0.03);
+  letter-spacing: -4px;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+}
+.rpt-cover-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+}
+.rpt-title { font-family: 'DM Serif Display', serif; font-size: 32px; line-height: 1.15; margin-bottom: 8px; }
+.rpt-subtitle { font-size: 13px; color: var(--ink2); }
+.rpt-meta-box {
+  text-align: right;
+  flex-shrink: 0;
+}
+.rpt-id {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  background: var(--bg);
+  color: var(--ink2);
+  padding: 5px 12px;
+  border-radius: 4px;
+  letter-spacing: 0.1em;
+  display: inline-block;
+  margin-bottom: 6px;
+}
+.rpt-period {
+  font-family: 'DM Serif Display', serif;
+  font-size: 20px;
+  display: block;
+}
+.rpt-generated { font-size: 11px; color: var(--ink3); margin-top: 3px; }
+
+/* Section */
+.rpt-section {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  margin-bottom: 16px;
+}
+.rpt-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 20px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--bg);
+}
+.rpt-section-head h2 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+.rpt-section-tag {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--ink3);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.rpt-section-body { padding: 20px; }
+.rpt-section-body.no-pad { padding: 0; }
+
+/* KPI strip */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1px;
+  background: var(--rule);
+  border: 1px solid var(--rule);
+  margin-bottom: 16px;
+}
+.kpi-cell {
+  background: var(--surface);
+  padding: 18px 16px 14px;
+  position: relative;
+}
+.kpi-cell::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--rule);
+}
+.kpi-cell.k-total::before  { background: var(--ink); }
+.kpi-cell.k-open::before   { background: var(--red); }
+.kpi-cell.k-found::before  { background: var(--green); }
+.kpi-cell.k-child::before  { background: var(--amber); }
+.kpi-cell.k-adult::before  { background: var(--blue); }
+.kpi-cell.k-tips::before   { background: var(--teal); }
+.kpi-cell.k-avg::before    { background: var(--purple); }
+
+.kpi-lbl {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: var(--ink3);
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  margin-bottom: 6px;
+}
+.kpi-val {
+  font-family: 'DM Serif Display', serif;
+  font-size: 38px;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+.kpi-cell.k-open  .kpi-val  { color: var(--red); }
+.kpi-cell.k-found .kpi-val  { color: var(--green); }
+.kpi-cell.k-child .kpi-val  { color: var(--amber); }
+.kpi-cell.k-adult .kpi-val  { color: var(--blue); }
+.kpi-cell.k-tips  .kpi-val  { color: var(--teal); }
+.kpi-cell.k-avg   .kpi-val  { color: var(--purple); }
+
+.kpi-note { font-size: 11px; color: var(--ink3); }
+
+/* Charts grid */
+.chart-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.chart-grid-1 { margin-bottom: 16px; }
+
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+}
+.chart-card .rpt-section-head { background: var(--bg); }
+.chart-canvas {
+  padding: 16px;
+  height: 240px;
+  position: relative;
+}
+.chart-canvas.tall { height: 300px; }
+
+/* Tables */
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+thead tr { background: var(--ink); color: var(--paper); }
+thead th {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 9px 14px;
+  text-align: left;
+}
+tbody tr { border-bottom: 1px solid var(--rule); }
+tbody tr:nth-child(even) { background: var(--bg); }
+tbody tr:hover { background: #e8e3d8; }
+tbody td { padding: 9px 14px; }
+.mono { font-family: 'DM Mono', monospace; font-size: 11px; }
+
+/* Status badges */
+.badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.badge-open         { background: #fde8e5; color: var(--red); }
+.badge-resolved     { background: #e3f2ea; color: var(--green); }
+.badge-investigating{ background: #fdf3e0; color: var(--amber); }
+.badge-closed       { background: #efefef; color: #666; }
+
+/* Horizontal bar for county table */
+.hbar { display: flex; align-items: center; gap: 8px; }
+.hbar-track { flex: 1; height: 5px; background: var(--rule); border-radius: 3px; overflow: hidden; }
+.hbar-fill  { height: 100%; background: var(--ink); border-radius: 3px; }
+.hbar-val   { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--ink3); min-width: 22px; text-align: right; }
+
+/* Gender bar */
+.gbar { display: flex; height: 24px; border-radius: 4px; overflow: hidden; margin: 10px 0 6px; }
+.gbar-m  { background: var(--blue);   display: flex; align-items: center; justify-content: center; }
+.gbar-f  { background: var(--purple); display: flex; align-items: center; justify-content: center; }
+.gbar-u  { background: var(--ink3);   display: flex; align-items: center; justify-content: center; }
+.gbar span { color: white; font-size: 9px; font-family: 'DM Mono', monospace; padding: 0 6px; white-space: nowrap; overflow: hidden; }
+
+.legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 6px; }
+.leg-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--ink2); }
+.leg-dot  { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+
+/* Reporter breakdown inline bars */
+.rep-row { display: flex; align-items: center; gap: 10px; margin: 6px 0; }
+.rep-label { font-size: 12px; color: var(--ink2); width: 130px; flex-shrink: 0; }
+.rep-track { flex: 1; height: 8px; background: var(--rule); border-radius: 4px; overflow: hidden; }
+.rep-fill  { height: 100%; border-radius: 4px; }
+.rep-count { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ink3); width: 40px; text-align: right; }
+
+/* Alert section */
+.alert-box {
+  border-left: 3px solid var(--red);
+  background: #fdf0ee;
+  padding: 12px 16px;
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+.alert-box strong { color: var(--red); font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 3px; }
+
+/* Footer */
+.rpt-footer {
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  color: var(--ink3);
+}
+
+/* ═══════════════════════════════════════
+   RESPONSIVE / PRINT
+═══════════════════════════════════════ */
+@media (max-width: 900px) {
+  #app { flex-direction: column; }
+  .sidebar { width: 100%; height: auto; position: static; flex-direction: row; flex-wrap: wrap; gap: 16px; }
+  .sidebar-logo { border-bottom: none; border-right: 1px solid rgba(255,255,255,0.1); padding-right: 20px; padding-bottom: 0; }
+  .btn-generate, .btn-pdf { width: auto; }
+  .chart-grid-2 { grid-template-columns: 1fr; }
+  .main { padding: 24px 20px 60px; }
+}
+
+@media print {
+  .sidebar { display: none; }
+  .main { padding: 0; }
+  #report-doc { display: block !important; }
+  .empty-state { display: none; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ─── SIDEBAR ─────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h1>Nipate</h1>
+      <div class="sub">Missing Persons · Kenya</div>
+    </div>
+
+    <a href="../admin.html" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;color:rgba(255,255,255,.45);text-decoration:none;display:flex;align-items:center;gap:6px;margin-top:-14px">← Back to Admin Panel</a>
+
+    <div class="ctrl-group">
+      <div class="ctrl-label">Report Period</div>
+      <select id="yearFrom">
+        <option value="2022">From: 2022</option>
+        <option value="2023">From: 2023</option>
+        <option value="2024" selected>From: 2024</option>
+      </select>
+      <select id="yearTo">
+        <option value="2022">To: 2022</option>
+        <option value="2023">To: 2023</option>
+        <option value="2024" selected>To: 2024</option>
+      </select>
+    </div>
+
+    <div class="ctrl-group">
+      <div class="ctrl-label">County Filter</div>
+      <select id="countyFilter">
+        <option value="all">All Counties</option>
+        <option value="Nairobi">Nairobi</option>
+        <option value="Mombasa">Mombasa</option>
+        <option value="Kisumu">Kisumu</option>
+        <option value="Nakuru">Nakuru</option>
+        <option value="Eldoret">Eldoret</option>
+        <option value="Machakos">Machakos</option>
+        <option value="Nyeri">Nyeri</option>
+      </select>
+    </div>
+
+    <div class="ctrl-group">
+      <div class="ctrl-label">Status Filter</div>
+      <select id="statusFilter">
+        <option value="all">All Statuses</option>
+        <option value="open">Open</option>
+        <option value="investigating">Investigating</option>
+        <option value="resolved">Resolved</option>
+        <option value="closed">Closed</option>
+      </select>
+    </div>
+
+    <hr class="sidebar-divider">
+
+    <div class="ctrl-group">
+      <div class="ctrl-label">Include Sections</div>
+      <div class="checkbox-list">
+        <label class="check-item"><input type="checkbox" id="sec-summary" checked><div class="check-box"></div>Summary Statistics</label>
+        <label class="check-item"><input type="checkbox" id="sec-demographics" checked><div class="check-box"></div>Demographics</label>
+        <label class="check-item"><input type="checkbox" id="sec-trends" checked><div class="check-box"></div>Monthly Trends</label>
+        <label class="check-item"><input type="checkbox" id="sec-yoy" checked><div class="check-box"></div>Year-on-Year Chart</label>
+        <label class="check-item"><input type="checkbox" id="sec-counties" checked><div class="check-box"></div>County Breakdown</label>
+        <label class="check-item"><input type="checkbox" id="sec-reporters" checked><div class="check-box"></div>Reporter Sources</label>
+        <label class="check-item"><input type="checkbox" id="sec-caselog" checked><div class="check-box"></div>Case Log Table</label>
+        <label class="check-item"><input type="checkbox" id="sec-alerts" checked><div class="check-box"></div>Alerts & Observations</label>
+      </div>
+    </div>
+
+    <hr class="sidebar-divider">
+
+    <button class="btn-generate" onclick="generateReport()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      Generate Report
+    </button>
+    <button class="btn-pdf" onclick="exportPDF()" id="pdfBtn" style="display:none">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 16v-8m0 8l-3-3m3 3l3-3M4 20h16"/></svg>
+      Download PDF
+    </button>
+  </aside>
+
+  <!-- ─── MAIN ─────────────────────────────────── -->
+  <main class="main">
+
+    <!-- Empty state -->
+    <div class="empty-state" id="emptyState">
+      <div class="empty-icon">📋</div>
+      <h2>No report generated yet</h2>
+      <p>Configure filters and sections on the left, then click <strong>Generate Report</strong> to produce a statistical report.</p>
+    </div>
+
+    <!-- Report document -->
+    <div id="report-doc">
+
+      <!-- Cover -->
+      <div class="rpt-cover">
+        <div class="rpt-cover-inner">
+          <div>
+            <div class="rpt-title">Missing Persons<br>Statistics Report</div>
+            <div class="rpt-subtitle">Nipate · Kenya Police Service Integrated Platform<br>Protected under the Kenya Data Protection Act, 2019</div>
+          </div>
+          <div class="rpt-meta-box">
+            <div class="rpt-id" id="rptId">—</div>
+            <span class="rpt-period" id="rptPeriod">—</span>
+            <div class="rpt-generated" id="rptGenerated">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sections injected here by JS -->
+      <div id="rpt-body"></div>
+
+      <!-- Footer -->
+      <div class="rpt-footer">
+        <div><strong style="color:var(--ink2)">Nipate</strong> · Missing Persons Reporting &amp; Alerting System · Kenya<br>This report is generated from live system data. Handle with care per KDPA 2019.</div>
+        <div style="text-align:right"><strong style="color:var(--ink2)">Kenya Police Service</strong><br>National Crime Records Bureau</div>
+      </div>
+
+    </div><!-- /report-doc -->
+  </main>
+</div>
+
+<script>
+/* ═══════════════════════════════════════
+   MOCK DATA
+   Replace with real Supabase fetch:
+   const { data } = await supabase.from('cases').select('*')
+═══════════════════════════════════════ */
+const ALL_CASES = [
+  {id:'NIP-2024-001',name:'John Mwangi',       age:34, group:'Adult',   gender:'Male',  county:'Nairobi',   date:'2024-01-08',year:2024,reporter:'registered',status:'resolved',    tips:3},
+  {id:'NIP-2024-002',name:'Amina Hassan',      age:9,  group:'Child',   gender:'Female',county:'Mombasa',   date:'2024-01-14',year:2024,reporter:'police',      status:'open',         tips:7},
+  {id:'NIP-2024-003',name:'Peter Otieno',      age:16, group:'Child',   gender:'Male',  county:'Kisumu',    date:'2024-02-03',year:2024,reporter:'registered',status:'investigating',tips:2},
+  {id:'NIP-2024-004',name:'Grace Wanjiru',     age:42, group:'Adult',   gender:'Female',county:'Nairobi',   date:'2024-02-19',year:2024,reporter:'registered',status:'resolved',    tips:5},
+  {id:'NIP-2024-005',name:'Samuel Kipchoge',   age:7,  group:'Child',   gender:'Male',  county:'Eldoret',   date:'2024-03-01',year:2024,reporter:'police',      status:'open',         tips:11},
+  {id:'NIP-2024-006',name:'Faith Achieng',     age:27, group:'Adult',   gender:'Female',county:'Kisumu',    date:'2024-03-22',year:2024,reporter:'registered',status:'resolved',    tips:1},
+  {id:'NIP-2024-007',name:'Brian Mutua',       age:19, group:'Adult',   gender:'Male',  county:'Nairobi',   date:'2024-04-05',year:2024,reporter:'registered',status:'open',         tips:0},
+  {id:'NIP-2024-008',name:'Mary Njeri',        age:13, group:'Child',   gender:'Female',county:'Nakuru',    date:'2024-04-18',year:2024,reporter:'police',      status:'investigating',tips:4},
+  {id:'NIP-2024-009',name:'Hassan Omar',       age:55, group:'Adult',   gender:'Male',  county:'Mombasa',   date:'2024-05-02',year:2024,reporter:'registered',status:'closed',       tips:2},
+  {id:'NIP-2024-010',name:'Christine Auma',    age:11, group:'Child',   gender:'Female',county:'Nairobi',   date:'2024-05-20',year:2024,reporter:'police',      status:'open',         tips:8},
+  {id:'NIP-2024-011',name:'David Kamau',       age:38, group:'Adult',   gender:'Male',  county:'Nakuru',    date:'2024-06-07',year:2024,reporter:'registered',status:'resolved',    tips:3},
+  {id:'NIP-2024-012',name:'Lilian Moraa',      age:6,  group:'Child',   gender:'Female',county:'Kisumu',    date:'2024-06-15',year:2024,reporter:'police',      status:'open',         tips:14},
+  {id:'NIP-2024-013',name:'James Odhiambo',    age:44, group:'Adult',   gender:'Male',  county:'Nairobi',   date:'2024-07-01',year:2024,reporter:'registered',status:'investigating',tips:1},
+  {id:'NIP-2024-014',name:'Rehema Said',       age:17, group:'Child',   gender:'Female',county:'Mombasa',   date:'2024-07-19',year:2024,reporter:'registered',status:'resolved',    tips:6},
+  {id:'NIP-2024-015',name:'Unknown Male',      age:null,group:'Unknown',gender:'Unknown',county:'Eldoret',  date:'2024-08-04',year:2024,reporter:'anonymous',  status:'open',         tips:2},
+  {id:'NIP-2024-016',name:'Nancy Waweru',      age:30, group:'Adult',   gender:'Female',county:'Nairobi',   date:'2024-08-22',year:2024,reporter:'registered',status:'resolved',    tips:4},
+  {id:'NIP-2024-017',name:'Kevin Ruto',        age:8,  group:'Child',   gender:'Male',  county:'Eldoret',   date:'2024-09-10',year:2024,reporter:'police',      status:'open',         tips:9},
+  {id:'NIP-2024-018',name:'Esther Nyambura',   age:23, group:'Adult',   gender:'Female',county:'Nakuru',    date:'2024-09-28',year:2024,reporter:'registered',status:'investigating',tips:3},
+  {id:'NIP-2024-019',name:'Michael Oloo',      age:50, group:'Adult',   gender:'Male',  county:'Kisumu',    date:'2024-10-14',year:2024,reporter:'registered',status:'closed',       tips:0},
+  {id:'NIP-2024-020',name:'Cynthia Chebet',    age:14, group:'Child',   gender:'Female',county:'Eldoret',   date:'2024-10-30',year:2024,reporter:'police',      status:'open',         tips:5},
+  {id:'NIP-2024-021',name:'Ali Musa',          age:31, group:'Adult',   gender:'Male',  county:'Mombasa',   date:'2024-11-12',year:2024,reporter:'registered',status:'resolved',    tips:7},
+  {id:'NIP-2024-022',name:'Rose Atieno',       age:10, group:'Child',   gender:'Female',county:'Nairobi',   date:'2024-11-28',year:2024,reporter:'police',      status:'open',         tips:3},
+  {id:'NIP-2024-023',name:'Joseph Kimani',     age:62, group:'Adult',   gender:'Male',  county:'Nairobi',   date:'2024-12-05',year:2024,reporter:'registered',status:'resolved',    tips:2},
+  {id:'NIP-2024-024',name:'Beatrice Koech',    age:15, group:'Child',   gender:'Female',county:'Nakuru',    date:'2024-12-19',year:2024,reporter:'police',      status:'investigating',tips:6},
+  {id:'NIP-2024-025',name:'George Were',       age:29, group:'Adult',   gender:'Male',  county:'Machakos',  date:'2024-03-14',year:2024,reporter:'registered',status:'resolved',    tips:4},
+  {id:'NIP-2024-026',name:'Tabitha Mugo',      age:12, group:'Child',   gender:'Female',county:'Nyeri',     date:'2024-05-09',year:2024,reporter:'police',      status:'open',         tips:6},
+  {id:'NIP-2024-027',name:'Dennis Omondi',     age:41, group:'Adult',   gender:'Male',  county:'Kisumu',    date:'2024-07-23',year:2024,reporter:'registered',status:'closed',       tips:1},
+  // 2023
+  {id:'NIP-2023-001',name:'Tom Kariuki',       age:28, group:'Adult',   gender:'Male',  county:'Nairobi',   date:'2023-02-10',year:2023,reporter:'registered',status:'resolved',    tips:4},
+  {id:'NIP-2023-002',name:'Zainab Farah',      age:12, group:'Child',   gender:'Female',county:'Mombasa',   date:'2023-04-22',year:2023,reporter:'police',      status:'resolved',    tips:9},
+  {id:'NIP-2023-003',name:'Paul Mutuku',       age:45, group:'Adult',   gender:'Male',  county:'Nairobi',   date:'2023-06-15',year:2023,reporter:'registered',status:'closed',       tips:1},
+  {id:'NIP-2023-004',name:'Sarah Aoko',        age:5,  group:'Child',   gender:'Female',county:'Kisumu',    date:'2023-08-03',year:2023,reporter:'police',      status:'resolved',    tips:12},
+  {id:'NIP-2023-005',name:'Daniel Wekesa',     age:37, group:'Adult',   gender:'Male',  county:'Eldoret',   date:'2023-10-17',year:2023,reporter:'registered',status:'resolved',    tips:3},
+  {id:'NIP-2023-006',name:'Mercy Kamau',       age:8,  group:'Child',   gender:'Female',county:'Nakuru',    date:'2023-01-29',year:2023,reporter:'police',      status:'resolved',    tips:8},
+  {id:'NIP-2023-007',name:'Anthony Njomo',     age:52, group:'Adult',   gender:'Male',  county:'Nairobi',   date:'2023-07-11',year:2023,reporter:'registered',status:'closed',       tips:0},
+  {id:'NIP-2023-008',name:'Gladys Odhiambo',   age:19, group:'Adult',   gender:'Female',county:'Kisumu',    date:'2023-09-25',year:2023,reporter:'registered',status:'open',         tips:2},
+  {id:'NIP-2023-009',name:'Kevin Mutai',       age:14, group:'Child',   gender:'Male',  county:'Eldoret',   date:'2023-11-03',year:2023,reporter:'police',      status:'investigating',tips:5},
+  {id:'NIP-2023-010',name:'Patricia Wanjiku',  age:33, group:'Adult',   gender:'Female',county:'Nairobi',   date:'2023-12-20',year:2023,reporter:'registered',status:'resolved',    tips:3},
+  // 2022
+  {id:'NIP-2022-001',name:'Anne Wangari',      age:22, group:'Adult',   gender:'Female',county:'Nairobi',   date:'2022-03-12',year:2022,reporter:'registered',status:'resolved',    tips:5},
+  {id:'NIP-2022-002',name:'Moses Omondi',      age:9,  group:'Child',   gender:'Male',  county:'Kisumu',    date:'2022-07-20',year:2022,reporter:'police',      status:'resolved',    tips:8},
+  {id:'NIP-2022-003',name:'Fatuma Abdi',       age:33, group:'Adult',   gender:'Female',county:'Mombasa',   date:'2022-11-05',year:2022,reporter:'registered',status:'closed',       tips:2},
+  {id:'NIP-2022-004',name:'Eric Kiprop',       age:11, group:'Child',   gender:'Male',  county:'Eldoret',   date:'2022-04-18',year:2022,reporter:'police',      status:'resolved',    tips:10},
+  {id:'NIP-2022-005',name:'Susan Otieno',      age:40, group:'Adult',   gender:'Female',county:'Kisumu',    date:'2022-08-30',year:2022,reporter:'registered',status:'resolved',    tips:3},
+  {id:'NIP-2022-006',name:'Henry Maina',       age:27, group:'Adult',   gender:'Male',  county:'Nairobi',   date:'2022-01-15',year:2022,reporter:'registered',status:'open',         tips:1},
+];
+
+/* ═══════════════════════════════════════
+   UTILITIES
+═══════════════════════════════════════ */
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const C = { ink:'#16120e', red:'#b5311a', green:'#1d6840', amber:'#c47d0e', blue:'#1a4a72', teal:'#1a6060', purple:'#5b2d8e', faint:'#9a8f7e' };
+const chartBase = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { labels: { font: { family:"'DM Mono'", size:10 }, boxWidth:10, padding:10 } } }
+};
+const axTick = { font:{ family:"'DM Mono'", size:9 } };
+
+let charts = {};
+function killChart(id) { if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
+
+function pct(n,t) { return t ? Math.round(n/t*100) : 0; }
+function fmtDate(d) { return new Date(d+'T00:00:00').toLocaleDateString('en-KE',{day:'2-digit',month:'short',year:'numeric'}); }
+
+function filterData() {
+  const yf = +document.getElementById('yearFrom').value;
+  const yt = +document.getElementById('yearTo').value;
+  const co = document.getElementById('countyFilter').value;
+  const st = document.getElementById('statusFilter').value;
+  return ALL_CASES.filter(c =>
+    c.year >= Math.min(yf,yt) &&
+    c.year <= Math.max(yf,yt) &&
+    (co === 'all' || c.county === co) &&
+    (st === 'all' || c.status === st)
+  );
+}
+
+function sec(id) { return document.getElementById(id)?.checked; }
+
+/* ═══════════════════════════════════════
+   MAIN GENERATE
+═══════════════════════════════════════ */
+function generateReport() {
+  const cases = filterData();
+  const yf = document.getElementById('yearFrom').value;
+  const yt = document.getElementById('yearTo').value;
+  const periodLabel = yf === yt ? `FY ${yf}` : `${yf} – ${yt}`;
+
+  // Show report doc
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('report-doc').style.display = 'block';
+  document.getElementById('pdfBtn').style.display = 'flex';
+
+  // Cover meta
+  document.getElementById('rptId').textContent = 'RPT-' + yf + (yf!==yt?'-'+yt:'') + '-' + (100+Math.floor(Math.random()*899));
+  document.getElementById('rptPeriod').textContent = periodLabel;
+  document.getElementById('rptGenerated').textContent = 'Generated ' + new Date().toLocaleDateString('en-KE',{day:'2-digit',month:'long',year:'numeric'});
+
+  // Build body
+  const body = document.getElementById('rpt-body');
+  body.innerHTML = '';
+  Object.values(charts).forEach(ch => ch.destroy());
+  charts = {};
+
+  if(sec('sec-summary'))     body.appendChild(buildSummary(cases));
+  if(sec('sec-demographics')) body.appendChild(buildDemographics(cases));
+  if(sec('sec-trends'))      body.appendChild(buildTrends(cases));
+  if(sec('sec-yoy'))         body.appendChild(buildYoY(yf, yt));
+  if(sec('sec-counties'))    body.appendChild(buildCounties(cases));
+  if(sec('sec-reporters'))   body.appendChild(buildReporters(cases));
+  if(sec('sec-alerts'))      body.appendChild(buildAlerts(cases, periodLabel));
+  if(sec('sec-caselog'))     body.appendChild(buildCaseLog(cases));
+
+  // Render all charts after DOM insert
+  renderAllCharts(cases, yf, yt);
+  body.scrollIntoView({ behavior:'smooth' });
+}
+
+/* ═══════════════════════════════════════
+   SECTION BUILDERS
+═══════════════════════════════════════ */
+function buildSummary(cases) {
+  const total    = cases.length;
+  const open     = cases.filter(c=>c.status==='open').length;
+  const invest   = cases.filter(c=>c.status==='investigating').length;
+  const resolved = cases.filter(c=>c.status==='resolved').length;
+  const closed   = cases.filter(c=>c.status==='closed').length;
+  const children = cases.filter(c=>c.group==='Child').length;
+  const adults   = cases.filter(c=>c.group==='Adult').length;
+  const tips     = cases.reduce((s,c)=>s+c.tips,0);
+  const ages     = cases.filter(c=>c.age).map(c=>c.age);
+  const avgAge   = ages.length ? Math.round(ages.reduce((a,b)=>a+b,0)/ages.length) : '—';
+
+  const el = document.createElement('div');
+  el.innerHTML = `
+    <div class="kpi-grid">
+      <div class="kpi-cell k-total"><div class="kpi-lbl">Total Cases</div><div class="kpi-val">${total}</div><div class="kpi-note">in selected period</div></div>
+      <div class="kpi-cell k-open"><div class="kpi-lbl">Open / Active</div><div class="kpi-val">${open+invest}</div><div class="kpi-note">${pct(open+invest,total)}% of total</div></div>
+      <div class="kpi-cell k-found"><div class="kpi-lbl">Resolved</div><div class="kpi-val">${resolved}</div><div class="kpi-note">${pct(resolved,total)}% resolution rate</div></div>
+      <div class="kpi-cell k-child"><div class="kpi-lbl">Children (U18)</div><div class="kpi-val">${children}</div><div class="kpi-note">${pct(children,total)}% of cases</div></div>
+      <div class="kpi-cell k-adult"><div class="kpi-lbl">Adults (18+)</div><div class="kpi-val">${adults}</div><div class="kpi-note">${pct(adults,total)}% of cases</div></div>
+      <div class="kpi-cell k-tips"><div class="kpi-lbl">Tips Received</div><div class="kpi-val">${tips}</div><div class="kpi-note">incl. anonymous</div></div>
+      <div class="kpi-cell k-avg"><div class="kpi-lbl">Avg Age (yrs)</div><div class="kpi-val">${avgAge}</div><div class="kpi-note">across known ages</div></div>
+    </div>`;
+  return el;
+}
+
+function buildDemographics(cases) {
+  const total   = cases.length;
+  const male    = cases.filter(c=>c.gender==='Male').length;
+  const female  = cases.filter(c=>c.gender==='Female').length;
+  const unk     = total - male - female;
+  const mp=pct(male,total), fp=pct(female,total), up=100-mp-fp;
+
+  const el = document.createElement('div');
+  el.className = 'chart-grid-2';
+  el.innerHTML = `
+    <div class="chart-card">
+      <div class="rpt-section-head"><h2>Age Group Distribution</h2><span class="rpt-section-tag">Demographics</span></div>
+      <div class="chart-canvas"><canvas id="ch-age"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="rpt-section-head"><h2>Case Status Breakdown</h2><span class="rpt-section-tag">Status</span></div>
+      <div class="chart-canvas"><canvas id="ch-status"></canvas></div>
+    </div>`;
+
+  // Gender bar below charts
+  const gbar = document.createElement('div');
+  gbar.className = 'rpt-section';
+  gbar.innerHTML = `
+    <div class="rpt-section-head"><h2>Gender Distribution</h2><span class="rpt-section-tag">Demographics</span></div>
+    <div class="rpt-section-body">
+      <div class="gbar">
+        <div class="gbar-m" style="width:${mp}%"><span>Male ${mp}%</span></div>
+        <div class="gbar-f" style="width:${fp}%"><span>Female ${fp}%</span></div>
+        ${up>0?`<div class="gbar-u" style="width:${up}%"><span>${up>4?'Unknown '+up+'%':''}</span></div>`:''}
+      </div>
+      <div class="legend">
+        <div class="leg-item"><div class="leg-dot" style="background:var(--blue)"></div>Male (${male})</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--purple)"></div>Female (${female})</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--ink3)"></div>Not Specified (${unk})</div>
+      </div>
+    </div>`;
+
+  const wrap = document.createElement('div');
+  wrap.appendChild(el);
+  wrap.appendChild(gbar);
+  return wrap;
+}
+
+function buildTrends(cases) {
+  const el = document.createElement('div');
+  el.className = 'chart-card';
+  el.style.marginBottom = '16px';
+  el.innerHTML = `
+    <div class="rpt-section-head"><h2>Cases Reported by Month</h2><span class="rpt-section-tag">Trend</span></div>
+    <div class="chart-canvas tall"><canvas id="ch-monthly"></canvas></div>`;
+  return el;
+}
+
+function buildYoY(yf, yt) {
+  const el = document.createElement('div');
+  el.className = 'chart-card';
+  el.style.marginBottom = '16px';
+  el.innerHTML = `
+    <div class="rpt-section-head"><h2>Year-on-Year Comparison</h2><span class="rpt-section-tag">${yf} – ${yt}</span></div>
+    <div class="chart-canvas tall"><canvas id="ch-yoy"></canvas></div>`;
+  return el;
+}
+
+function buildCounties(cases) {
+  const map = {};
+  cases.forEach(c => {
+    if(!map[c.county]) map[c.county]={total:0,open:0,resolved:0,tips:0};
+    map[c.county].total++;
+    map[c.county].tips += c.tips;
+    if(c.status==='open'||c.status==='investigating') map[c.county].open++;
+    if(c.status==='resolved') map[c.county].resolved++;
+  });
+  const sorted = Object.entries(map).sort((a,b)=>b[1].total-a[1].total);
+  const maxT = sorted[0]?.[1]?.total || 1;
+
+  const rows = sorted.map(([county,d])=>`
+    <tr>
+      <td><strong>${county}</strong></td>
+      <td class="mono">${d.total}</td>
+      <td class="mono" style="color:var(--red)">${d.open}</td>
+      <td class="mono" style="color:var(--green)">${d.resolved}</td>
+      <td class="mono" style="color:var(--teal)">${d.tips}</td>
+      <td class="mono">${pct(d.resolved,d.total)}%</td>
+      <td style="width:160px">
+        <div class="hbar">
+          <div class="hbar-track"><div class="hbar-fill" style="width:${pct(d.total,maxT)}%"></div></div>
+          <span class="hbar-val">${d.total}</span>
+        </div>
+      </td>
+    </tr>`).join('');
+
+  const el = document.createElement('div');
+  el.className = 'rpt-section';
+  el.style.marginBottom = '16px';
+  el.innerHTML = `
+    <div class="rpt-section-head"><h2>Cases by County</h2><span class="rpt-section-tag">Geographic</span></div>
+    <div class="rpt-section-body no-pad">
+      <table>
+        <thead><tr><th>County</th><th>Total</th><th>Open</th><th>Resolved</th><th>Tips</th><th>Resolution %</th><th>Volume</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  return el;
+}
+
+function buildReporters(cases) {
+  const total = cases.length;
+  const byR = {};
+  cases.forEach(c=>{ byR[c.reporter]=(byR[c.reporter]||0)+1; });
+  const labels = { registered:'Registered User', police:'Police Officer', anonymous:'Anonymous Tip' };
+  const colours = { registered:C.blue, police:C.green, anonymous:C.faint };
+
+  const bars = Object.entries(byR).sort((a,b)=>b[1]-a[1]).map(([r,n])=>`
+    <div class="rep-row">
+      <div class="rep-label">${labels[r]||r}</div>
+      <div class="rep-track"><div class="rep-fill" style="width:${pct(n,total)}%;background:${colours[r]||C.ink}"></div></div>
+      <div class="rep-count">${n} &nbsp;<span style="color:var(--ink3)">(${pct(n,total)}%)</span></div>
+    </div>`).join('');
+
+  const el = document.createElement('div');
+  el.className = 'rpt-section';
+  el.style.marginBottom = '16px';
+  el.innerHTML = `
+    <div class="rpt-section-head"><h2>Cases by Reporter Source</h2><span class="rpt-section-tag">Who filed</span></div>
+    <div class="rpt-section-body">${bars}</div>`;
+  return el;
+}
+
+function buildAlerts(cases, period) {
+  const total    = cases.length;
+  const openRate = pct(cases.filter(c=>c.status==='open').length, total);
+  const childPct = pct(cases.filter(c=>c.group==='Child').length, total);
+  const zeroTips = cases.filter(c=>c.tips===0).length;
+  const topCounty = (() => {
+    const m = {};
+    cases.forEach(c=>{ m[c.county]=(m[c.county]||0)+1; });
+    return Object.entries(m).sort((a,b)=>b[1]-a[1])[0];
+  })();
+
+  const alerts = [];
+  if(openRate > 40) alerts.push({ title:'High Open Case Rate', body:`${openRate}% of cases in this period remain open or under investigation. This is above the recommended threshold and warrants review of resource allocation.` });
+  if(childPct > 35) alerts.push({ title:'Elevated Child Cases', body:`Children account for ${childPct}% of missing persons in this period. This may indicate heightened vulnerability in school-age or street-connected populations.` });
+  if(zeroTips > 0) alerts.push({ title:'Cases With No Tips', body:`${zeroTips} case${zeroTips>1?'s':''} in this period received zero public tips. Consider issuing targeted alerts or media bulletins for these cases.` });
+  if(topCounty) alerts.push({ title:`Hotspot County — ${topCounty[0]}`, body:`${topCounty[0]} recorded the highest number of missing persons (${topCounty[1]}) in this period. A county-level review may be beneficial.` });
+  if(!alerts.length) alerts.push({ title:'No Critical Alerts', body:'No anomalies detected for the selected period and filters.' });
+
+  const el = document.createElement('div');
+  el.className = 'rpt-section';
+  el.style.marginBottom = '16px';
+  el.innerHTML = `
+    <div class="rpt-section-head"><h2>Alerts &amp; Observations</h2><span class="rpt-section-tag">Auto-generated</span></div>
+    <div class="rpt-section-body">
+      ${alerts.map(a=>`<div class="alert-box"><strong>⚠ ${a.title}</strong>${a.body}</div>`).join('')}
+    </div>`;
+  return el;
+}
+
+function buildCaseLog(cases) {
+  const badgeMap = {open:'badge-open',resolved:'badge-resolved',investigating:'badge-investigating',closed:'badge-closed'};
+  const repLabel = {registered:'Registered User',police:'Police',anonymous:'Anonymous'};
+
+  const rows = cases.map(c=>`
+    <tr>
+      <td class="mono">${c.id}</td>
+      <td>${c.name}</td>
+      <td class="mono">${c.age??'—'}</td>
+      <td>${c.group}</td>
+      <td>${c.gender}</td>
+      <td>${c.county}</td>
+      <td class="mono">${fmtDate(c.date)}</td>
+      <td>${repLabel[c.reporter]||c.reporter}</td>
+      <td><span class="badge ${badgeMap[c.status]||'badge-closed'}">${c.status}</span></td>
+      <td class="mono" style="text-align:center">${c.tips}</td>
+    </tr>`).join('');
+
+  const el = document.createElement('div');
+  el.className = 'rpt-section';
+  el.innerHTML = `
+    <div class="rpt-section-head"><h2>Full Case Log</h2><span class="rpt-section-tag">${cases.length} records</span></div>
+    <div class="rpt-section-body no-pad">
+      <table>
+        <thead><tr><th>Case ID</th><th>Name</th><th>Age</th><th>Group</th><th>Gender</th><th>County</th><th>Reported</th><th>Filed By</th><th>Status</th><th>Tips</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  return el;
+}
+
+/* ═══════════════════════════════════════
+   CHART RENDERERS
+═══════════════════════════════════════ */
+function renderAllCharts(cases, yf, yt) {
+  // Age groups
+  if(document.getElementById('ch-age')) {
+    const g = {'0–5':0,'6–12':0,'13–17':0,'18–25':0,'26–40':0,'41–60':0,'60+':0,'Unknown':0};
+    cases.forEach(c=>{
+      if(!c.age){ g['Unknown']++; return; }
+      if(c.age<=5) g['0–5']++;
+      else if(c.age<=12) g['6–12']++;
+      else if(c.age<=17) g['13–17']++;
+      else if(c.age<=25) g['18–25']++;
+      else if(c.age<=40) g['26–40']++;
+      else if(c.age<=60) g['41–60']++;
+      else g['60+']++;
+    });
+    charts['age'] = new Chart(document.getElementById('ch-age'),{
+      type:'bar',
+      data:{ labels:Object.keys(g), datasets:[{ label:'Cases', data:Object.values(g),
+        backgroundColor:[C.amber,C.amber,'#e67e22',C.blue,C.blue,C.ink,C.ink,C.faint], borderRadius:2 }]},
+      options:{ ...chartBase, indexAxis:'y', scales:{ x:{beginAtZero:true,ticks:{stepSize:1,...axTick}}, y:{ticks:axTick} } }
+    });
+  }
+
+  // Status doughnut
+  if(document.getElementById('ch-status')) {
+    const sc = {};
+    cases.forEach(c=>{ sc[c.status]=(sc[c.status]||0)+1; });
+    charts['status'] = new Chart(document.getElementById('ch-status'),{
+      type:'doughnut',
+      data:{ labels:Object.keys(sc).map(s=>s[0].toUpperCase()+s.slice(1)),
+        datasets:[{ data:Object.values(sc), backgroundColor:[C.red,C.green,C.amber,C.faint], borderWidth:0 }]},
+      options:{ ...chartBase, cutout:'65%' }
+    });
+  }
+
+  // Monthly trend
+  if(document.getElementById('ch-monthly')) {
+    const byMonth = Array(12).fill(0);
+    const byMonthC = Array(12).fill(0);
+    const byMonthA = Array(12).fill(0);
+    cases.forEach(c=>{
+      const m = new Date(c.date+'T00:00:00').getMonth();
+      byMonth[m]++;
+      if(c.group==='Child') byMonthC[m]++;
+      if(c.group==='Adult') byMonthA[m]++;
+    });
+    charts['monthly'] = new Chart(document.getElementById('ch-monthly'),{
+      type:'bar',
+      data:{ labels:MONTHS, datasets:[
+        { label:'Total', data:byMonth, backgroundColor:C.ink, borderRadius:2 },
+        { label:'Children', data:byMonthC, backgroundColor:C.amber, borderRadius:2 },
+        { label:'Adults', data:byMonthA, backgroundColor:C.blue, borderRadius:2 },
+      ]},
+      options:{ ...chartBase, scales:{ y:{beginAtZero:true,ticks:{stepSize:1,...axTick}}, x:{ticks:axTick} } }
+    });
+  }
+
+  // Year-on-Year
+  if(document.getElementById('ch-yoy')) {
+    const years = [];
+    for(let y=+yf; y<=+yt; y++) years.push(y);
+    if(years.length===1 && years[0]>2022) years.unshift(years[0]-1);
+    const cnt = (yr,st) => ALL_CASES.filter(c=>c.year===yr&&(st?c.status===st:true)).length;
+    charts['yoy'] = new Chart(document.getElementById('ch-yoy'),{
+      type:'bar',
+      data:{ labels:years.map(String), datasets:[
+        { label:'Total',    data:years.map(y=>cnt(y)),            backgroundColor:C.ink,   borderRadius:2 },
+        { label:'Children', data:years.map(y=>ALL_CASES.filter(c=>c.year===y&&c.group==='Child').length), backgroundColor:C.amber, borderRadius:2 },
+        { label:'Adults',   data:years.map(y=>ALL_CASES.filter(c=>c.year===y&&c.group==='Adult').length), backgroundColor:C.blue,  borderRadius:2 },
+        { label:'Resolved', data:years.map(y=>cnt(y,'resolved')), backgroundColor:C.green, borderRadius:2 },
+        { label:'Open',     data:years.map(y=>cnt(y,'open')),     backgroundColor:C.red,   borderRadius:2 },
+      ]},
+      options:{ ...chartBase, scales:{ y:{beginAtZero:true,ticks:{stepSize:2,...axTick}}, x:{ticks:axTick} } }
+    });
+  }
+}
+
+/* ═══════════════════════════════════════
+   PDF EXPORT
+═══════════════════════════════════════ */
+async function exportPDF() {
+  const btn = document.getElementById('pdfBtn');
+  btn.textContent = 'Generating…';
+  btn.disabled = true;
+  try {
+    const {jsPDF} = window.jspdf;
+    const el = document.getElementById('report-doc');
+    const canvas = await html2canvas(el, { scale:1.6, useCORS:true, backgroundColor:'#faf9f6' });
+    const img = canvas.toDataURL('image/png');
+    const pdf = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+    const pw = pdf.internal.pageSize.getWidth();
+    const ph = pdf.internal.pageSize.getHeight();
+    const ih = (canvas.height * pw) / canvas.width;
+    let y = 0;
+    while(y < ih) {
+      if(y>0) pdf.addPage();
+      pdf.addImage(img,'PNG',0,-y,pw,ih);
+      y += ph;
+    }
+    const period = document.getElementById('rptPeriod').textContent.replace(/\s/g,'-');
+    pdf.save(`Nipate-Report-${period}.pdf`);
+  } catch(e) { alert('PDF export failed: '+e.message); }
+  finally {
+    btn.innerHTML = `<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 16v-8m0 8l-3-3m3 3l3-3M4 20h16"/></svg> Download PDF`;
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>

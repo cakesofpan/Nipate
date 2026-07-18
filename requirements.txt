@@ -1,0 +1,32 @@
+# Web framework
+aiohttp==3.9.5
+aiohttp-cors==0.7.0
+
+# Supabase
+supabase==2.4.6
+gotrue==2.4.4           # Supabase Auth client (bundled with supabase)
+
+# JWT verification
+PyJWT==2.8.0
+cryptography==42.0.8    # needed by PyJWT for RS256 (Supabase uses HS256 but good to have)
+
+# Email
+aiosmtplib==3.0.1
+
+# File processing
+Pillow==10.3.0          # image validation + resizing
+python-multipart==0.0.9 # multipart form / file upload parsing
+
+# Fuzzy deduplication
+rapidfuzz==3.9.1
+
+# Security / sanitisation
+bleach==6.1.0
+
+# Env config
+python-dotenv==1.0.1
+
+# Dev / testing (not needed in production)
+pytest==8.2.0
+pytest-asyncio==0.23.6
+aioresponses==0.7.6     # mock aiohttp requests in tests

@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nipate — Kenya Missing Persons Platform</title>
+  <meta name="description" content="Kenya's official missing persons reporting and alerting platform. Search cases, submit reports, and help bring people home.">
+
+  <!-- Open Graph -->
+  <meta property="og:title"       content="Nipate — Kenya Missing Persons">
+  <meta property="og:description" content="Search missing persons cases, submit reports, and help bring families together.">
+  <meta property="og:url"         content="https://nipate.go.ke">
+  <meta property="og:type"        content="website">
+
+  <!-- Fonts & icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     NAVIGATION
+     ═══════════════════════════════════════════════════════════════ -->
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="container nav-inner">
+
+    <a href="/" class="nav-logo" aria-label="Nipate home">
+      <div class="logo-pulse" aria-hidden="true"></div>
+      <div>
+        Nipate
+        <span class="logo-sub">Kenya Missing Persons</span>
+      </div>
+    </a>
+
+    <div class="nav-links">
+      <button class="nav-link active" onclick="location.href='cases.html'">Search Cases</button>
+      <button class="nav-link" onclick="window.location.href='report.html'">Report Missing</button>
+      <button class="nav-link" onclick="window.location.href='tip.html'">Submit Tip</button>
+      <button class="nav-link" onclick="window.location.href='police.html'">Police Portal</button>
+      <button class="nav-link" onclick="window.location.href='about.html'">About</button>
+    </div>
+
+    <div class="nav-right">
+      <button class="nav-lang" onclick="toggleLanguage(this)" aria-label="Switch language">EN</button>
+      <button class="nav-login" onclick="openModal('login')" aria-label="Log in">Log in</button>
+      <button class="nav-cta" onclick="window.location.href='report.html'">
+        <i class="ti ti-plus" aria-hidden="true"></i>
+        Report Case
+      </button>
+    </div>
+
+  </div>
+</nav>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     ALERT STRIP  (content updated dynamically by auth.js)
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="alert-strip" role="alert" aria-live="polite">
+  <div class="container alert-strip-inner">
+    <div class="alert-dot" aria-hidden="true"></div>
+    <p>
+      <strong>ACTIVE ALERT:</strong>
+      Amina Wanjiru (Female, 8) missing in Westlands, Nairobi for 3 days.
+      If you have information, please submit a tip immediately.
+    </p>
+    <a href="tip.html">Submit tip →</a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     HERO
+     ═══════════════════════════════════════════════════════════════ -->
+<section class="hero" aria-labelledby="hero-heading">
+  <div class="container hero-grid">
+
+    <div class="hero-content">
+      <div class="hero-eyebrow">Kenya's Missing Persons Platform</div>
+      <h1 id="hero-heading">
+        Every person<br>
+        <em>deserves to be found</em>
+      </h1>
+      <p class="hero-desc">
+        Nipate connects families, communities, and law enforcement to report, track,
+        and recover missing persons across all 47 counties of Kenya.
+        Secure. Transparent. Always available.
+      </p>
+      <div class="hero-actions">
+        <a href="report.html" class="btn-primary">
+          <i class="ti ti-file-plus" aria-hidden="true"></i>
+          Report a missing person
+        </a>
+        <button class="btn-outline" onclick="scrollToSection('cases')">
+          <i class="ti ti-search" aria-hidden="true"></i>
+          Search cases
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick search card (hidden on mobile via CSS) -->
+    <div class="hero-search-card" aria-label="Quick case search">
+      <h3>
+        <i class="ti ti-search" aria-hidden="true"></i>
+        Quick search
+      </h3>
+      <div class="search-input-group">
+        <input
+          type="search"
+          id="hero-search"
+          placeholder="Name, case number, location…"
+          aria-label="Search for a missing person"
+          oninput="filterCases(this.value)"
+        >
+        <button aria-label="Search" onclick="location.href='cases.html?q='+encodeURIComponent(document.getElementById('hero-search').value)">
+          <i class="ti ti-search" aria-hidden="true"></i>
+        </button>
+      </div>
+      <div class="search-filters">
+        <select aria-label="Filter by county" onchange="filterCases()">
+          <option value="">All counties</option>
+          <option>Nairobi</option>
+          <option>Mombasa</option>
+          <option>Kisumu</option>
+          <option>Nakuru</option>
+          <option>Eldoret</option>
+          <option>Thika</option>
+        </select>
+        <select aria-label="Filter by category" onchange="filterCases()">
+          <option value="">All categories</option>
+          <option>Child (under 18)</option>
+          <option>Adult</option>
+          <option>Elderly</option>
+          <option>Vulnerable adult</option>
+        </select>
+      </div>
+      <div class="quick-stats">
+        <div class="quick-stat">
+          <span class="val red" id="stat-active">247</span>
+          <span class="lbl">Active</span>
+        </div>
+        <div class="quick-stat">
+          <span class="val green" id="stat-found">1,842</span>
+          <span class="lbl">Found</span>
+        </div>
+        <div class="quick-stat">
+          <span class="val" id="stat-tips">4,210</span>
+          <span class="lbl">Tips</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     STATS BAR  (numbers updated by auth.js → loadStats())
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="stats-bar" role="region" aria-label="Platform statistics">
+  <div class="container">
+    <div class="stats-bar-inner">
+      <div class="stat-item"><div class="num red">247</div><div class="lbl">Active cases</div></div>
+      <div class="stat-item"><div class="num mint">1,842</div><div class="lbl">Found safe</div></div>
+      <div class="stat-item"><div class="num sky">89</div><div class="lbl">Under investigation</div></div>
+      <div class="stat-item"><div class="num gold">4,210</div><div class="lbl">Tips received</div></div>
+      <div class="stat-item"><div class="num">47</div><div class="lbl">Counties covered</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     MAIN — CASE LISTING
+     ═══════════════════════════════════════════════════════════════ -->
+<main class="main" id="cases">
+  <div class="container">
+
+    <!-- Browse Cases CTA -->
+    <section style="margin-bottom:40px" aria-labelledby="browse-heading">
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:40px;display:grid;grid-template-columns:1fr auto;gap:32px;align-items:center">
+        <div>
+          <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:10px">Missing persons database</div>
+          <h2 id="browse-heading" style="font-family:var(--font-serif);font-size:28px;color:var(--text);margin-bottom:10px;line-height:1.2">Search for a missing person</h2>
+          <p style="font-size:14px;color:var(--muted);line-height:1.7;max-width:480px;margin-bottom:20px">Browse all <strong id="browse-count" style="color:var(--text)">247</strong> active cases across all 47 counties. Filter by location, category, or status. Every case is publicly searchable.</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <a href="cases.html" class="btn-primary" style="font-size:14px">
+              <i class="ti ti-search" aria-hidden="true"></i>
+              Browse all cases
+            </a>
+            <a href="cases.html?risk=urgent" style="display:inline-flex;align-items:center;gap:8px;background:#FEF2F2;border:1px solid #FECACA;color:var(--red);font-size:14px;font-weight:500;padding:13px 22px;border-radius:9px;transition:.15s" onmouseover="this.style.background='#FEE2E2'" onmouseout="this.style.background='#FEF2F2'">
+              <i class="ti ti-alert-triangle" aria-hidden="true"></i>
+              Urgent cases only
+            </a>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;min-width:240px">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;text-align:center">
+            <div style="font-size:26px;font-weight:600;color:var(--red);margin-bottom:4px" id="cta-active">247</div>
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">Active</div>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;text-align:center">
+            <div style="font-size:26px;font-weight:600;color:var(--mint);margin-bottom:4px" id="cta-found">1,842</div>
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">Found safe</div>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;text-align:center">
+            <div style="font-size:26px;font-weight:600;color:var(--sky);margin-bottom:4px" id="cta-inv">89</div>
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">Investigating</div>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;text-align:center">
+            <div style="font-size:26px;font-weight:600;margin-bottom:4px" id="cta-tips">4,210</div>
+            <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px">Tips</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Alert subscription ─────────────────────────────────── -->
+    <section class="sub-section" aria-labelledby="sub-heading">
+      <div>
+        <h2 id="sub-heading">Get instant alerts for your county</h2>
+        <p>
+          Subscribe to receive email notifications when a new verified case is reported
+          in your county. Help your community by staying informed and sharing alerts.
+        </p>
+      </div>
+      <div class="sub-form">
+        <div class="sub-form-row">
+          <input type="email" id="sub-email" placeholder="your@email.com" aria-label="Your email for alerts">
+          <button onclick="subscribe()">Subscribe →</button>
+        </div>
+        <div class="sub-counties" id="county-pills" role="group" aria-label="Select counties for alerts">
+          <span class="county-pill sel" data-county="all"     onclick="toggleCounty(this)">All counties</span>
+          <span class="county-pill"     data-county="nairobi" onclick="toggleCounty(this)">Nairobi</span>
+          <span class="county-pill"     data-county="mombasa" onclick="toggleCounty(this)">Mombasa</span>
+          <span class="county-pill"     data-county="kisumu"  onclick="toggleCounty(this)">Kisumu</span>
+          <span class="county-pill"     data-county="nakuru"  onclick="toggleCounty(this)">Nakuru</span>
+          <span class="county-pill"     data-county="eldoret" onclick="toggleCounty(this)">Eldoret</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── How it works ───────────────────────────────────────── -->
+    <section aria-labelledby="how-heading">
+      <div class="section-head">
+        <h2 class="section-title" id="how-heading">How Nipate works</h2>
+      </div>
+      <div class="how-grid">
+        <div class="how-card">
+          <div class="how-icon navy"><i class="ti ti-file-plus" style="color:var(--navy)" aria-hidden="true"></i></div>
+          <h3>1. Report online</h3>
+          <p>Submit a verified report with photos, location on Google Maps, and a detailed description. ID verification ensures report quality.</p>
+        </div>
+        <div class="how-card">
+          <div class="how-icon red"><i class="ti ti-shield-check" style="color:var(--red)" aria-hidden="true"></i></div>
+          <h3>2. Goes public instantly</h3>
+          <p>Your report is published immediately with a unique case number. The public can search for and share it right away.</p>
+        </div>
+        <div class="how-card">
+          <div class="how-icon sky"><i class="ti ti-bell-ringing" style="color:var(--sky)" aria-hidden="true"></i></div>
+          <h3>3. Alerts sent</h3>
+          <p>Verified cases trigger immediate email alerts to county subscribers and social media sharing to maximise reach.</p>
+        </div>
+        <div class="how-card">
+          <div class="how-icon mint"><i class="ti ti-heart" style="color:var(--mint)" aria-hidden="true"></i></div>
+          <h3>4. Community tips</h3>
+          <p>Anyone can submit anonymous tips. Each tip is reviewed by assigned officers and tracked through to resolution.</p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     FOOTER
+     ═══════════════════════════════════════════════════════════════ -->
+<footer class="footer" role="contentinfo">
+  <div class="container">
+    <div class="footer-grid">
+
+      <div class="footer-brand">
+        <div class="nav-logo" style="margin-bottom:14px">
+          <div class="logo-pulse"></div>
+          <div>Nipate<span class="logo-sub">Kenya Missing Persons</span></div>
+        </div>
+        <p>An official platform supporting Kenya's law enforcement agencies in locating missing persons and reuniting families across all 47 counties.</p>
+      </div>
+
+      <div class="footer-col">
+        <h4>Platform</h4>
+        <a href="cases.html">Search cases</a>
+        <a href="report.html">Report missing</a>
+        <a href="tip.html">Submit tip</a>
+        <a href="alerts.html">Alert subscription</a>
+      </div>
+
+      <div class="footer-col">
+        <h4>Law enforcement</h4>
+        <a href="police.html">Police portal</a>
+        <a href="admin.html">Admin panel</a>
+        <a href="verify.html">Account verification</a>
+        <a href="api-docs.html">API documentation</a>
+      </div>
+
+      <div class="footer-col">
+        <h4>Information</h4>
+        <a href="about.html">About Nipate</a>
+        <a href="privacy.html">Privacy policy</a>
+        <a href="terms.html">Terms of use</a>
+        <a href="contact.html">Contact us</a>
+      </div>
+
+    </div>
+    <div class="footer-bottom">
+      <p>© 2024 Nipate. Government of Kenya. All rights reserved.</p>
+      <div class="footer-compliance">
+        <span><i class="ti ti-shield"   aria-hidden="true"></i> Kenya DPA 2019 Compliant</span>
+        <span><i class="ti ti-lock"     aria-hidden="true"></i> TLS 1.3 Encrypted</span>
+        <span><i class="ti ti-database" aria-hidden="true"></i> Daily backups</span>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     AUTH MODAL
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-overlay" role="dialog" aria-modal="true"
+     aria-labelledby="modal-title" onclick="closeModal(event)">
+  <div class="modal">
+
+    <div class="modal-header">
+      <h2 id="modal-title">Sign in to Nipate</h2>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close">
+        <i class="ti ti-x" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <div class="modal-tabs" role="tablist">
+      <button class="modal-tab active" id="tab-login"  role="tab" aria-selected="true"  onclick="switchTab('login')">Log in</button>
+      <button class="modal-tab"        id="tab-signup" role="tab" aria-selected="false" onclick="switchTab('signup')">Create account</button>
+    </div>
+
+    <!-- Login panel -->
+    <div class="modal-body" id="panel-login" role="tabpanel">
+      <div class="field">
+        <label for="login-email">Email address</label>
+        <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="login-password">Password</label>
+        <input type="password" id="login-password" placeholder="Your password" autocomplete="current-password">
+      </div>
+      <div style="text-align:right;margin-bottom:16px">
+        <a href="reset.html" style="font-size:12px;color:var(--sky)">Forgot password?</a>
+      </div>
+      <button class="modal-btn" onclick="doLogin()">Log in</button>
+      <div class="divider">or</div>
+      <button class="modal-btn" style="background:var(--surface);color:var(--text);border:1px solid var(--border)" onclick="switchTab('signup')">
+        Create a new account
+      </button>
+      <div id="login-error" style="margin-top:12px;font-size:13px;color:var(--red);display:none;text-align:center"></div>
+    </div>
+
+    <!-- Signup panel -->
+    <div class="modal-body" id="panel-signup" role="tabpanel" style="display:none">
+      <div class="field-row">
+        <div class="field">
+          <label for="signup-name">Full name</label>
+          <input type="text" id="signup-name" placeholder="Your full name" autocomplete="name">
+        </div>
+        <div class="field">
+          <label for="signup-phone">Phone number</label>
+          <input type="tel" id="signup-phone" placeholder="+254…" autocomplete="tel">
+        </div>
+      </div>
+      <div class="field">
+        <label for="signup-email">Email address</label>
+        <input type="email" id="signup-email" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="field">
+        <label for="signup-county">County</label>
+        <select id="signup-county">
+          <option value="">Select your county…</option>
+          <option>Nairobi</option><option>Mombasa</option><option>Kisumu</option>
+          <option>Nakuru</option><option>Eldoret</option><option>Thika</option>
+          <option>Machakos</option><option>Kakamega</option><option>Kilifi</option><option>Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="signup-password">Password</label>
+        <input type="password" id="signup-password" placeholder="Min 8 chars, 1 number, 1 uppercase" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <label for="signup-password-confirm">Confirm password</label>
+        <input type="password" id="signup-password-confirm" placeholder="Re-enter your password" autocomplete="new-password">
+      </div>
+      <button class="modal-btn" onclick="doSignup()">Create account</button>
+      <div id="signup-error" style="margin-top:12px;font-size:13px;color:var(--red);display:none;text-align:center"></div>
+    </div>
+
+    <div class="modal-footer">
+      <p>
+        By signing in you agree to our <a href="privacy.html">Privacy Policy</a> and
+        <a href="terms.html">Terms of Use</a>.
+        Protected under Kenya's Data Protection Act 2019.
+      </p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     TOAST
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="toast" id="toast" role="alert" aria-live="polite">
+  <i class="ti ti-check" aria-hidden="true"></i>
+  <span id="toast-msg">Success</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     SCRIPTS  — order matters:
+     1. ui.js (plain script, defines globals synchronously)
+     2. auth.js (ES module, async, depends on ui.js globals)
+     ═══════════════════════════════════════════════════════════════ -->
+<script src="assets/js/ui.js"></script>
+<script type="module" src="assets/js/auth.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Submit a Tip — Nipate</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="assets/css/forms.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="container nav-inner">
+    <a href="index.html" class="nav-logo"><div class="logo-pulse"></div><div>Nipate<span class="logo-sub">Kenya Missing Persons</span></div></a>
+    <div class="nav-links">
+      <button class="nav-link" onclick="location.href='index.html'">Search Cases</button>
+      <button class="nav-link" onclick="location.href='report.html'">Report Missing</button>
+      <button class="nav-link active">Submit Tip</button>
+      <button class="nav-link" onclick="location.href='police.html'">Police Portal</button>
+    </div>
+    <div class="nav-right">
+      <button class="nav-lang" onclick="toggleLanguage(this)">EN</button>
+      <button class="nav-login" id="nav-login-btn" onclick="openModal('login')">Log in</button>
+    </div>
+  </div>
+</nav>
+
+<div class="page-header">
+  <div class="container page-header-inner">
+    <div>
+      <div class="page-breadcrumb"><a href="index.html">Home</a><span>›</span> Submit Tip</div>
+      <h1 class="page-title">Submit a tip</h1>
+      <p class="page-subtitle">Help bring someone home · Tips are reviewed by assigned officers</p>
+    </div>
+  </div>
+</div>
+
+<div class="page-body">
+  <div class="container">
+    <div class="page-layout">
+
+      <div>
+        <!-- View toggle: Submit / Track -->
+        <div class="page-tabs" style="margin-bottom:20px">
+          <button class="page-tab active" id="tab-submit" onclick="showPanel('submit')"><i class="ti ti-send"></i> Submit a tip</button>
+          <button class="page-tab" id="tab-track" onclick="showPanel('track')"><i class="ti ti-search"></i> Track my tip</button>
+        </div>
+
+        <!-- SUBMIT PANEL -->
+        <div id="panel-submit">
+
+          <!-- Anonymity selector — the key feature -->
+          <div class="anon-panel" style="margin-bottom:20px">
+            <div class="anon-options">
+              <button class="anon-option selected" id="opt-anon" onclick="selectAnon(true)">
+                <span class="anon-option-icon">🛡️</span>
+                <span class="anon-option-title">Submit anonymously</span>
+                <span class="anon-option-desc">Your identity is completely hidden. No contact details stored.</span>
+              </button>
+              <button class="anon-option" id="opt-identified" onclick="selectAnon(false)">
+                <span class="anon-option-icon">👤</span>
+                <span class="anon-option-title">Submit with contact info</span>
+                <span class="anon-option-desc">Investigators may follow up. You can track your tip's status.</span>
+              </button>
+            </div>
+            <div id="anon-info-box" class="anon-detail-box">
+              🛡️ <strong>Anonymous mode is on.</strong> Your IP address is not logged and no identifying information is stored. You can still attach evidence files.
+            </div>
+            <!-- Contact fields shown only for identified -->
+            <div class="contact-fields" id="contact-fields">
+              <p style="font-size:12px;color:var(--muted);margin-bottom:10px">Providing contact info helps investigators follow up if needed. It is kept strictly confidential.</p>
+              <div class="form-row">
+                <div class="field-group">
+                  <label class="field-label">Email address</label>
+                  <input id="tipster_email" class="field-input" type="email" placeholder="you@example.com">
+                  <span class="field-hint">Used for status updates and to track your tip</span>
+                </div>
+                <div class="field-group">
+                  <label class="field-label">Phone number</label>
+                  <input id="tipster_phone" class="field-input" type="tel" placeholder="+254…">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tip form -->
+          <div class="form-card">
+            <div class="card-header"><h3><i class="ti ti-message-report"></i> Tip details</h3></div>
+            <div class="card-body">
+              <div class="form-row">
+                <div class="field-group">
+                  <label class="field-label">Related case <span class="req">*</span></label>
+                  <input id="case_search" class="field-input" placeholder="Search by name or case number…" oninput="searchCases(this.value)">
+                  <div id="case-results" style="display:none;position:relative">
+                    <div id="case-dropdown" style="position:absolute;z-index:50;background:#fff;border:1px solid var(--border);border-radius:8px;width:100%;box-shadow:var(--shadow-md);max-height:200px;overflow-y:auto"></div>
+                  </div>
+                  <input type="hidden" id="case_id">
+                  <div id="selected-case" style="display:none;margin-top:8px;padding:8px 12px;background:var(--surface);border-radius:6px;font-size:12px;display:flex;align-items:center;gap:8px">
+                    <span class="badge badge-inv" id="selected-case-label"></span>
+                    <button onclick="clearCase()" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;margin-left:auto">×</button>
+                  </div>
+                  <span class="field-error visible" id="err-case" style="display:none">Please select a case.</span>
+                </div>
+                <div class="field-group">
+                  <label class="field-label">Tip category</label>
+                  <select id="category" class="field-select">
+                    <option value="sighting">👁️ Sighting</option>
+                    <option value="location_info">📍 Location information</option>
+                    <option value="suspect_info">🔍 Suspect information</option>
+                    <option value="other">💬 Other information</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-row full">
+                <div class="field-group">
+                  <label class="field-label">Your information <span class="req">*</span></label>
+                  <textarea id="content" class="field-textarea" rows="5" placeholder="Describe what you saw, heard, or know. Include as much detail as possible — time, date, location, description of people or vehicles involved…"></textarea>
+                  <span class="field-error" id="err-content"></span>
+                  <span class="field-hint">Minimum 10 characters. Be as specific as possible — even small details can help.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Evidence upload -->
+          <div class="form-card" style="margin-top:16px">
+            <div class="card-header"><h3><i class="ti ti-paperclip"></i> Attach evidence <span style="font-weight:400;color:var(--muted)">(optional)</span></h3></div>
+            <div class="card-body">
+              <div class="upload-zone" id="evidence-zone" onclick="document.getElementById('evidence-input').click()">
+                <div class="upload-zone-icon"><i class="ti ti-file-upload"></i></div>
+                <h4>Photo, video, or document</h4>
+                <p>JPEG · PNG · MP4 · PDF · Max 50 MB · Stored encrypted, only accessible to investigators</p>
+                <p id="evidence-filename" style="margin-top:8px;font-size:12px;color:var(--mint);font-weight:500"></p>
+              </div>
+              <input type="file" id="evidence-input" accept="image/jpeg,image/png,image/webp,video/mp4,application/pdf" style="display:none" onchange="setEvidenceFile(this)">
+            </div>
+          </div>
+
+          <div class="submit-bar">
+            <p class="submit-note">Tips are reviewed within 48 hours. Anonymous tips cannot be tracked.</p>
+            <button class="btn-submit" id="tip-submit-btn" onclick="submitTip()">
+              <i class="ti ti-send"></i> Submit tip
+            </button>
+          </div>
+        </div>
+
+        <!-- TRACK PANEL -->
+        <div id="panel-track" style="display:none">
+          <div class="form-card">
+            <div class="card-header"><h3><i class="ti ti-search"></i> Track your tip</h3></div>
+            <div class="card-body">
+              <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Enter your tip number to check its status. Only tips submitted with contact information can be tracked.</p>
+              <div class="form-row">
+                <div class="field-group" style="grid-column:1/-1">
+                  <label class="field-label">Tip number</label>
+                  <div style="display:flex;gap:8px">
+                    <input id="track-number" class="field-input" placeholder="e.g. NP-TIP-20240518-003" style="flex:1">
+                    <button class="btn-submit" style="flex-shrink:0;padding:9px 20px" onclick="trackTip()">Track</button>
+                  </div>
+                </div>
+              </div>
+              <div id="track-result" style="display:none;margin-top:20px"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SIDEBAR -->
+      <aside class="page-sidebar">
+        <div class="sidebar-card">
+          <div class="card-header"><h3><i class="ti ti-shield-lock"></i> Your privacy</h3></div>
+          <div class="card-body" style="font-size:13px;color:var(--muted);line-height:1.7">
+            <p style="margin-bottom:10px"><strong style="color:var(--text)">Anonymous tips:</strong> No IP, no identity, no tracking. Your information is used only to help find the missing person.</p>
+            <p><strong style="color:var(--text)">Identified tips:</strong> Your contact details are visible only to the assigned investigating officer and senior administrators. Never published.</p>
+          </div>
+        </div>
+        <div class="sidebar-card">
+          <div class="card-header"><h3><i class="ti ti-list-check"></i> What makes a good tip</h3></div>
+          <div class="card-body" style="font-size:13px;color:var(--muted);line-height:1.7">
+            <p style="margin-bottom:6px">✓ Specific location (street, building, landmark)</p>
+            <p style="margin-bottom:6px">✓ Date and time of sighting</p>
+            <p style="margin-bottom:6px">✓ Description of clothing or companions</p>
+            <p style="margin-bottom:6px">✓ Vehicle details (plate, colour, type)</p>
+            <p>✓ Any photos or video if safe to take</p>
+          </div>
+        </div>
+        <div class="sidebar-card">
+          <div class="card-header"><h3><i class="ti ti-phone"></i> Emergency?</h3></div>
+          <div class="card-body" style="font-size:13px">
+            <p style="color:var(--muted);margin-bottom:10px">If someone is in immediate danger, call police now.</p>
+            <a href="tel:999" style="display:flex;align-items:center;gap:8px;background:var(--red);color:#fff;padding:10px 14px;border-radius:8px;font-weight:500;font-size:14px"><i class="ti ti-phone-call"></i> Call 999</a>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header"><h2 id="modal-title">Sign in to Nipate</h2><button class="modal-close" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+    <div class="modal-tabs"><button class="modal-tab active" id="tab-login" onclick="switchTab('login')">Log in</button><button class="modal-tab" id="tab-signup" onclick="switchTab('signup')">Create account</button></div>
+    <div class="modal-body" id="panel-login">
+      <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="you@example.com"></div>
+      <div class="field"><label>Password</label><input type="password" id="login-password"></div>
+      <button class="modal-btn" onclick="doLogin()">Log in</button>
+      <div id="login-error" style="margin-top:10px;font-size:13px;color:var(--red);display:none;text-align:center"></div>
+    </div>
+    <div class="modal-body" id="panel-signup" style="display:none">
+      <div class="field-row">
+        <div class="field"><label>Full name</label><input type="text" id="signup-name"></div>
+        <div class="field"><label>Phone</label><input type="tel" id="signup-phone" placeholder="+254…"></div>
+      </div>
+      <div class="field"><label>Email</label><input type="email" id="signup-email"></div>
+      <div class="field"><label>County</label><select id="signup-county"><option value="">Select…</option><option>Nairobi</option><option>Mombasa</option><option>Kisumu</option><option>Other</option></select></div>
+      <div class="field"><label>Password</label><input type="password" id="signup-password"></div>
+      <div class="field"><label>Confirm password</label><input type="password" id="signup-password-confirm"></div>
+      <button class="modal-btn" onclick="doSignup()">Create account</button>
+      <div id="signup-error" style="margin-top:10px;font-size:13px;color:var(--red);display:none;text-align:center"></div>
+    </div>
+    <div class="modal-footer"><p>Protected under Kenya's Data Protection Act 2019.</p></div>
+  </div>
+</div>
+<div class="toast" id="toast"><i class="ti ti-check"></i><span id="toast-msg"></span></div>
+
+<script src="assets/js/ui.js"></script>
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+  const supabase = createClient('https://vyxaxoilyilrvrwgyfil.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5eGF4b2lseWlscnZyd2d5ZmlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTQzODksImV4cCI6MjA5ODQ5MDM4OX0.ZBfLgdjd5OvaFq7PKtN17hQWh2s37s86WIPpqB0Wz3M');
+  window._supabase = supabase;
+  const { data: { session } } = await supabase.auth.getSession();
+  window._session = session;
+  if (session) { document.getElementById('nav-login-btn').textContent = session.user.email.split('@')[0]; }
+
+  // Pre-fill case from URL
+  const params = new URLSearchParams(location.search);
+  const caseParam = params.get('case');
+  if (caseParam) { document.getElementById('case_id').value = caseParam; document.getElementById('case_search').value = caseParam; }
+
+  window._isAnonymous = true;
+
+  window.selectAnon = (anon) => {
+    window._isAnonymous = anon;
+    document.getElementById('opt-anon').classList.toggle('selected', anon);
+    document.getElementById('opt-identified').classList.toggle('selected', !anon);
+    const box = document.getElementById('anon-info-box');
+    const fields = document.getElementById('contact-fields');
+    if (anon) {
+      box.className = 'anon-detail-box'; box.innerHTML = '🛡️ <strong>Anonymous mode is on.</strong> Your IP address is not logged and no identifying information is stored.';
+      fields.classList.remove('visible');
+    } else {
+      box.className = 'anon-detail-box identified'; box.innerHTML = '👤 <strong>Identified mode.</strong> Your contact details are visible only to the investigating officer. You will receive a tip number to track your tip.';
+      fields.classList.add('visible');
+    }
+  };
+
+  window.showPanel = (panel) => {
+    ['submit','track'].forEach(p => {
+      document.getElementById('panel-'+p).style.display = p === panel ? '' : 'none';
+      document.getElementById('tab-'+p).classList.toggle('active', p === panel);
+    });
+  };
+
+  let _searchTimer;
+  window.searchCases = (q) => {
+    clearTimeout(_searchTimer);
+    _searchTimer = setTimeout(async () => {
+      if (q.length < 2) { document.getElementById('case-results').style.display = 'none'; return; }
+      const res = await fetch(`/api/cases?q=${encodeURIComponent(q)}&limit=5&is_public=true`);
+      const data = await res.json();
+      const dd = document.getElementById('case-dropdown');
+      dd.innerHTML = '';
+      (data.cases || []).forEach(c => {
+        const btn = document.createElement('button');
+        btn.style.cssText = 'width:100%;padding:10px 14px;text-align:left;background:none;border:none;border-bottom:1px solid var(--border);cursor:pointer;font-family:var(--font-sans);font-size:13px';
+        btn.innerHTML = `<strong>${c.full_name}</strong> <span style="color:var(--muted)">${c.case_number} · ${c.last_seen_county}</span>`;
+        btn.onmouseenter = () => btn.style.background = 'var(--surface)';
+        btn.onmouseleave = () => btn.style.background = 'none';
+        btn.onclick = () => {
+          document.getElementById('case_id').value = c.id;
+          document.getElementById('case_search').value = '';
+          const lbl = document.getElementById('selected-case-label');
+          lbl.textContent = `${c.full_name} · ${c.case_number}`;
+          document.getElementById('selected-case').style.display = 'flex';
+          document.getElementById('case-results').style.display = 'none';
+        };
+        dd.appendChild(btn);
+      });
+      document.getElementById('case-results').style.display = data.cases?.length ? 'block' : 'none';
+    }, 300);
+  };
+  window.clearCase = () => { document.getElementById('case_id').value = ''; document.getElementById('selected-case').style.display = 'none'; };
+
+  window.setEvidenceFile = (input) => {
+    if (input.files[0]) { document.getElementById('evidence-filename').textContent = '✓ ' + input.files[0].name; document.getElementById('evidence-zone').classList.add('active'); }
+  };
+
+  window.submitTip = async () => {
+    const caseId  = document.getElementById('case_id').value.trim();
+    const content = document.getElementById('content').value.trim();
+    const errCase = document.getElementById('err-case');
+    const errContent = document.getElementById('err-content');
+    let valid = true;
+    if (!caseId) { errCase.style.display = 'block'; valid = false; } else { errCase.style.display = 'none'; }
+    if (content.length < 10) { errContent.textContent = 'Please provide more detail (at least 10 characters).'; errContent.classList.add('visible'); valid = false; } else { errContent.classList.remove('visible'); }
+    if (!valid) return;
+
+    const btn = document.getElementById('tip-submit-btn');
+    btn.classList.add('loading'); btn.disabled = true;
+
+    const body = { case_id: caseId, content, category: document.getElementById('category').value, is_anonymous: window._isAnonymous };
+    if (!window._isAnonymous) { body.tipster_email = document.getElementById('tipster_email').value.trim() || undefined; body.tipster_phone = document.getElementById('tipster_phone').value.trim() || undefined; }
+
+    const headers = { 'Content-Type': 'application/json' };
+    if (window._session) headers.Authorization = `Bearer ${window._session.access_token}`;
+
+    try {
+      const res = await fetch('/api/tips', { method: 'POST', headers, body: JSON.stringify(body) });
+      const data = await res.json();
+      if (!res.ok) { showToast(data.errors?.[0] || data.error || 'Submission failed.', true); btn.classList.remove('loading'); btn.disabled = false; return; }
+
+      // Upload evidence if any
+      const ev = document.getElementById('evidence-input');
+      if (ev.files[0]) {
+        const fd = new FormData(); fd.append('evidence', ev.files[0]);
+        await fetch(`/api/tips/${data.tip_id}/attachments`, { method: 'POST', body: fd }).catch(() => {});
+      }
+
+      if (data.tip_number) showToast(`Tip submitted! Your tip number: ${data.tip_number} — save this to track your tip.`);
+      else showToast('Thank you! Your anonymous tip has been received.');
+
+      setTimeout(() => { document.getElementById('content').value = ''; document.getElementById('case_id').value = ''; document.getElementById('selected-case').style.display = 'none'; btn.classList.remove('loading'); btn.disabled = false; }, 2000);
+    } catch { showToast('Network error. Please try again.', true); btn.classList.remove('loading'); btn.disabled = false; }
+  };
+
+  window.trackTip = async () => {
+    const num = document.getElementById('track-number').value.trim().toUpperCase();
+    if (!num) { showToast('Please enter a tip number.', true); return; }
+    const result = document.getElementById('track-result');
+    result.innerHTML = '<p style="color:var(--muted);font-size:13px">Searching…</p>'; result.style.display = 'block';
+    try {
+      const res = await fetch(`/api/tips/track/${encodeURIComponent(num)}`);
+      const data = await res.json();
+      if (!res.ok) { result.innerHTML = `<p style="color:var(--red);font-size:13px">${data.error}</p>`; return; }
+
+      const steps = ['received','reviewed','under_investigation','resolved'];
+      const currentIdx = steps.indexOf(data.status);
+      const labels = { received:'Received', reviewed:'Reviewed', under_investigation:'Under investigation', resolved:'Resolved', dismissed:'Dismissed' };
+      const stepsHtml = steps.map((s, i) => {
+        const cls = i < currentIdx ? 'done' : i === currentIdx ? 'active' : 'pending';
+        const icon = cls === 'done' ? '✓' : i + 1;
+        return `<div class="timeline-step"><div class="step-dot ${cls}">${icon}</div><div class="step-info"><strong>${labels[s]}</strong><span>${s === data.status ? (data.reviewed_at || data.submitted_at || '') : ''}</span></div></div>`;
+      }).join('');
+
+      result.innerHTML = `<div class="status-timeline" style="margin-bottom:16px">${stepsHtml}</div>
+        <p style="font-size:12px;color:var(--muted)">Case: <strong>${data.case?.full_name || 'Unknown'}</strong> · ${data.case?.case_number || ''} · Submitted: ${new Date(data.submitted_at).toLocaleDateString()}</p>`;
+    } catch { result.innerHTML = '<p style="color:var(--red);font-size:13px">Could not connect. Please try again.</p>'; }
+  };
+
+  window.doLogin = async () => {
+    const { error } = await supabase.auth.signInWithPassword({ email: document.getElementById('login-email').value.trim(), password: document.getElementById('login-password').value });
+    if (error) { document.getElementById('login-error').textContent = 'Incorrect email or password.'; document.getElementById('login-error').style.display = 'block'; return; }
+    closeModal(); showToast('Signed in.'); setTimeout(() => location.reload(), 800);
+  };
+  window.doSignup = async () => {
+    const password = document.getElementById('signup-password').value;
+    const confirmPassword = document.getElementById('signup-password-confirm').value;
+    if (password !== confirmPassword) {
+      document.getElementById('signup-error').textContent = 'Passwords do not match.';
+      document.getElementById('signup-error').style.display = 'block';
+      return;
+    }
+    const { error } = await supabase.auth.signUp({ email: document.getElementById('signup-email').value.trim(), password, options: { data: { full_name: document.getElementById('signup-name').value, phone: document.getElementById('signup-phone').value, county: document.getElementById('signup-county').value }, emailRedirectTo: `${window.location.origin}/index.html` } });
+    if (error) { document.getElementById('signup-error').textContent = error.message; document.getElementById('signup-error').style.display = 'block'; return; }
+    closeModal(); showToast('Account created! Check your email.');
+  };
+</script>
+</body>
+</html>

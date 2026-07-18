@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reset Password — Nipate</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="assets/css/forms.css">
+  <style>
+    .reset-wrap {
+      min-height: calc(100vh - 60px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 40px 20px;
+      background: var(--surface);
+    }
+    .reset-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      width: 100%; max-width: 420px;
+      overflow: hidden;
+      box-shadow: var(--shadow-md);
+    }
+    .reset-header {
+      background: var(--navy);
+      padding: 28px 28px 24px;
+      text-align: center;
+    }
+    .reset-header .icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: rgba(255,255,255,.1);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; color: #fff;
+      margin: 0 auto 14px;
+    }
+    .reset-header h1 {
+      font-family: var(--font-serif);
+      font-size: 20px; color: #fff; margin-bottom: 6px;
+    }
+    .reset-header p {
+      font-size: 13px; color: rgba(255,255,255,.6); line-height: 1.6;
+    }
+    .reset-body { padding: 28px; }
+    .reset-body .field { margin-bottom: 16px; }
+    .reset-body .field:last-of-type { margin-bottom: 0; }
+    .reset-actions { margin-top: 20px; }
+    .reset-msg {
+      font-size: 13px; padding: 10px 14px; border-radius: 8px;
+      margin-bottom: 16px; display: none; line-height: 1.5;
+    }
+    .reset-msg.error   { background: #FEF2F2; color: var(--red); border: 1px solid #FECACA; display: block; }
+    .reset-msg.success { background: #F0FDF4; color: var(--mint); border: 1px solid #BBF7D0; display: block; }
+    .reset-success-icon {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: #F0FDF4; border: 1px solid #BBF7D0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; color: var(--mint);
+      margin: 0 auto 16px;
+    }
+    .reset-footer-link {
+      text-align: center; margin-top: 18px; font-size: 13px; color: var(--muted);
+    }
+    .reset-footer-link a { color: var(--sky); font-weight: 500; }
+    .strength-hint {
+      font-size: 11px; color: var(--muted); margin-top: -10px; margin-bottom: 16px;
+    }
+    .btn-block {
+      width: 100%; background: var(--navy); border: none;
+      color: #fff; font-family: var(--font-sans); font-size: 14px; font-weight: 500;
+      padding: 12px; border-radius: 8px; cursor: pointer; transition: .15s;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-block:hover { background: var(--navy-mid); }
+    .btn-block:disabled { opacity: .6; cursor: not-allowed; }
+    .btn-block.loading::after {
+      content: ''; width: 14px; height: 14px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.3); border-top-color: #fff;
+      animation: spin .6s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="container nav-inner">
+    <a href="index.html" class="nav-logo" aria-label="Nipate home">
+      <div class="logo-pulse" aria-hidden="true"></div>
+      <div>Nipate<span class="logo-sub">Kenya Missing Persons</span></div>
+    </a>
+    <div class="nav-right">
+      <button class="nav-lang" onclick="toggleLanguage(this)" aria-label="Switch language">EN</button>
+    </div>
+  </div>
+</nav>
+
+<div class="reset-wrap">
+  <div class="reset-card">
+
+    <!-- ═══ STATE 1: Request reset link ═══ -->
+    <div id="stage-request">
+      <div class="reset-header">
+        <div class="icon"><i class="ti ti-lock-question" aria-hidden="true"></i></div>
+        <h1>Forgot your password?</h1>
+        <p>Enter the email address on your account and we'll send you a link to reset it.</p>
+      </div>
+      <div class="reset-body">
+        <div class="reset-msg" id="request-msg"></div>
+        <div class="field">
+          <label for="request-email">Email address</label>
+          <input type="email" id="request-email" placeholder="you@example.com" autocomplete="email">
+        </div>
+        <div class="reset-actions">
+          <button class="btn-block" id="request-btn" onclick="sendResetLink()">
+            <i class="ti ti-send" aria-hidden="true"></i>
+            Send reset link
+          </button>
+        </div>
+        <div class="reset-footer-link">
+          Remembered your password? <a href="index.html">Back to log in</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ STATE 2: Set new password (after clicking email link) ═══ -->
+    <div id="stage-update" style="display:none">
+      <div class="reset-header">
+        <div class="icon"><i class="ti ti-lock" aria-hidden="true"></i></div>
+        <h1>Set a new password</h1>
+        <p>Choose a strong new password for your Nipate account.</p>
+      </div>
+      <div class="reset-body">
+        <div class="reset-msg" id="update-msg"></div>
+        <div class="field">
+          <label for="new-password">New password</label>
+          <input type="password" id="new-password" placeholder="Min 8 chars, 1 number, 1 uppercase" autocomplete="new-password">
+        </div>
+        <div class="field">
+          <label for="new-password-confirm">Confirm new password</label>
+          <input type="password" id="new-password-confirm" placeholder="Re-enter your new password" autocomplete="new-password">
+        </div>
+        <div class="reset-actions">
+          <button class="btn-block" id="update-btn" onclick="updatePassword()">
+            <i class="ti ti-check" aria-hidden="true"></i>
+            Update password
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ STATE 3: Success ═══ -->
+    <div id="stage-success" style="display:none">
+      <div class="reset-body" style="text-align:center;padding-top:36px">
+        <div class="reset-success-icon"><i class="ti ti-check" aria-hidden="true"></i></div>
+        <h1 style="font-family:var(--font-serif);font-size:20px;margin-bottom:8px">Password updated</h1>
+        <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:24px">
+          Your password has been changed successfully. You can now log in with your new password.
+        </p>
+        <a href="index.html?login=1" class="btn-block" style="text-decoration:none">
+          <i class="ti ti-login" aria-hidden="true"></i>
+          Go to log in
+        </a>
+      </div>
+    </div>
+
+    <!-- ═══ STATE 4: Invalid / expired link ═══ -->
+    <div id="stage-invalid" style="display:none">
+      <div class="reset-body" style="text-align:center;padding-top:36px">
+        <div class="reset-success-icon" style="background:#FEF2F2;border-color:#FECACA;color:var(--red)">
+          <i class="ti ti-alert-triangle" aria-hidden="true"></i>
+        </div>
+        <h1 style="font-family:var(--font-serif);font-size:20px;margin-bottom:8px">Link expired or invalid</h1>
+        <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:24px">
+          This password reset link is no longer valid. Please request a new one.
+        </p>
+        <button class="btn-block" onclick="showStage('request')">
+          <i class="ti ti-refresh" aria-hidden="true"></i>
+          Request a new link
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast" role="alert" aria-live="polite">
+  <i class="ti ti-check" aria-hidden="true"></i>
+  <span id="toast-msg">Success</span>
+</div>
+
+<script src="assets/js/ui.js"></script>
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+  const SUPABASE_URL = 'https://vyxaxoilyilrvrwgyfil.supabase.co';   // ← replace
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5eGF4b2lseWlscnZyd2d5ZmlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTQzODksImV4cCI6MjA5ODQ5MDM4OX0.ZBfLgdjd5OvaFq7PKtN17hQWh2s37s86WIPpqB0Wz3M';                 // ← replace
+
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  window._supabase = supabase;
+
+  /* ── Stage switching ─────────────────────────────────────────────── */
+  window.showStage = (stage) => {
+    ['request', 'update', 'success', 'invalid'].forEach(s => {
+      const el = document.getElementById(`stage-${s}`);
+      if (el) el.style.display = s === stage ? '' : 'none';
+    });
+  };
+
+  /* ── Detect the recovery link (Supabase puts a session in the URL
+     fragment when the user arrives from the reset email; the JS SDK
+     picks it up automatically and fires PASSWORD_RECOVERY) ────────── */
+  let handledRecovery = false;
+
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      handledRecovery = true;
+      showStage('update');
+    }
+  });
+
+  // Fallback: if the URL contains a recovery error (expired/used link),
+  // Supabase redirects back with #error=... instead of a session.
+  const hashParams = new URLSearchParams(window.location.hash.replace('#', '?'));
+  if (hashParams.get('error') || hashParams.get('error_code')) {
+    showStage('invalid');
+  } else {
+    // Give onAuthStateChange a brief moment to fire PASSWORD_RECOVERY
+    // before falling back to the default "request a link" state.
+    setTimeout(() => {
+      if (!handledRecovery) showStage('request');
+    }, 400);
+  }
+
+  /* ── Send reset link ─────────────────────────────────────────────── */
+  window.sendResetLink = async () => {
+    const email = document.getElementById('request-email').value.trim();
+    const msg = document.getElementById('request-msg');
+    const btn = document.getElementById('request-btn');
+
+    msg.className = 'reset-msg';
+    msg.style.display = 'none';
+
+    if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      msg.textContent = 'Please enter a valid email address.';
+      msg.className = 'reset-msg error';
+      return;
+    }
+
+    btn.classList.add('loading');
+    btn.disabled = true;
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset.html`,
+    });
+
+    btn.classList.remove('loading');
+    btn.disabled = false;
+
+    // Always show a generic success message — never confirm/deny whether
+    // an account exists for this email (avoids account enumeration).
+    msg.textContent = 'If an account exists for that email, a reset link has been sent. Check your inbox.';
+    msg.className = 'reset-msg success';
+
+    if (error) {
+      console.warn('Password reset request:', error.message);
+    }
+  };
+
+  /* ── Update password ─────────────────────────────────────────────── */
+  window.updatePassword = async () => {
+    const password = document.getElementById('new-password').value;
+    const confirmPassword = document.getElementById('new-password-confirm').value;
+    const msg = document.getElementById('update-msg');
+    const btn = document.getElementById('update-btn');
+
+    msg.className = 'reset-msg';
+    msg.style.display = 'none';
+
+    if (password.length < 8 || !/\d/.test(password) || !/[A-Z]/.test(password)) {
+      msg.textContent = 'Password must be at least 8 characters with a number and uppercase letter.';
+      msg.className = 'reset-msg error';
+      return;
+    }
+    if (password !== confirmPassword) {
+      msg.textContent = 'Passwords do not match.';
+      msg.className = 'reset-msg error';
+      return;
+    }
+
+    btn.classList.add('loading');
+    btn.disabled = true;
+
+    const { error } = await supabase.auth.updateUser({ password });
+
+    btn.classList.remove('loading');
+    btn.disabled = false;
+
+    if (error) {
+      msg.textContent = error.message.toLowerCase().includes('expired') || error.message.toLowerCase().includes('invalid')
+        ? 'This reset link has expired. Please request a new one.'
+        : error.message;
+      msg.className = 'reset-msg error';
+      return;
+    }
+
+    // Sign out the recovery session so "Go to log in" starts fresh.
+    await supabase.auth.signOut();
+    showStage('success');
+  };
+</script>
+</body>
+</html>

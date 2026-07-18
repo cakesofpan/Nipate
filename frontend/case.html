@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Case Detail — Nipate</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="assets/css/forms.css">
+  <style>
+    .case-images { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:10px; margin-bottom:20px; }
+    .case-img { width:100%; aspect-ratio:1; object-fit:cover; border-radius:10px; border:1px solid var(--border); cursor:pointer; transition:.15s; }
+    .case-img:hover { transform:scale(1.03); box-shadow:var(--shadow-md); }
+    .case-img-placeholder { aspect-ratio:1; background:linear-gradient(135deg,#CBD5E1,#94A3B8); border-radius:10px; display:flex; align-items:center; justify-content:center; font-family:var(--font-serif); font-size:52px; color:rgba(255,255,255,.8); }
+    .info-section-title { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--border); }
+    .update-form { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px; margin-top:12px; }
+    .update-form textarea { width:100%; background:#fff; border:1px solid var(--border); border-radius:7px; font-family:var(--font-sans); font-size:13px; padding:9px 12px; resize:vertical; min-height:80px; outline:none; }
+    .update-form textarea:focus { border-color:var(--sky); }
+    .social-share { display:flex; gap:8px; flex-wrap:wrap; }
+    .lightbox { position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,.9); display:none; align-items:center; justify-content:center; }
+    .lightbox.open { display:flex; }
+    .lightbox img { max-width:90vw; max-height:90vh; border-radius:8px; }
+    .lightbox-close { position:absolute; top:20px; right:24px; background:none; border:none; color:#fff; font-size:28px; cursor:pointer; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="container nav-inner">
+    <a href="index.html" class="nav-logo"><div class="logo-pulse"></div><div>Nipate<span class="logo-sub">Kenya Missing Persons</span></div></a>
+    <div class="nav-links">
+      <button class="nav-link" onclick="location.href='cases.html'">Search Cases</button>
+      <button class="nav-link" onclick="location.href='report.html'">Report Missing</button>
+      <button class="nav-link" onclick="location.href='tip.html'">Submit Tip</button>
+    </div>
+    <div class="nav-right">
+      <button class="nav-lang" onclick="toggleLanguage(this)">EN</button>
+      <button class="nav-login" id="nav-login-btn" onclick="openModal('login')">Log in</button>
+    </div>
+  </div>
+</nav>
+
+<!-- Case hero — populated by JS -->
+<div class="case-hero" id="case-hero">
+  <div class="container case-hero-inner">
+    <div class="case-photo-lg f1" id="hero-photo">?</div>
+    <div>
+      <div class="page-breadcrumb" style="margin-bottom:6px"><a href="index.html" style="color:rgba(255,255,255,.45)">Home</a><span style="color:rgba(255,255,255,.25)">›</span><a href="cases.html" style="color:rgba(255,255,255,.45)">Cases</a><span style="color:rgba(255,255,255,.25)">›</span><span id="hero-case-number" style="color:rgba(255,255,255,.6)">Loading…</span></div>
+      <div class="case-hero-name" id="hero-name">Loading…</div>
+      <div class="case-hero-meta" id="hero-meta"></div>
+    </div>
+    <div class="case-hero-actions" id="hero-actions"></div>
+  </div>
+</div>
+
+<div class="page-body">
+  <div class="container">
+    <div id="case-loading" style="text-align:center;padding:60px 0;color:var(--muted)"><i class="ti ti-loader" style="font-size:32px;animation:spin 1s linear infinite;display:block;margin-bottom:12px"></i>Loading case…</div>
+    <div id="case-content" style="display:none">
+      <div class="page-layout">
+
+        <!-- LEFT COLUMN -->
+        <div>
+
+          <!-- Photos -->
+          <div class="form-card" style="margin-bottom:16px">
+            <div class="card-header"><h3><i class="ti ti-photo"></i> Photos</h3></div>
+            <div class="card-body">
+              <div class="case-images" id="case-images"></div>
+            </div>
+          </div>
+
+          <!-- Physical description -->
+          <div class="form-card" style="margin-bottom:16px">
+            <div class="card-header"><h3><i class="ti ti-id"></i> Physical description</h3></div>
+            <div class="card-body">
+              <p id="physical-desc" style="font-size:14px;line-height:1.7;color:var(--text);margin-bottom:16px"></p>
+              <div class="detail-grid" id="detail-grid"></div>
+            </div>
+          </div>
+
+          <!-- Last seen & map -->
+          <div class="form-card" style="margin-bottom:16px">
+            <div class="card-header"><h3><i class="ti ti-map-pin"></i> Last seen</h3></div>
+            <div class="card-body">
+              <div class="detail-grid" id="location-grid" style="margin-bottom:16px"></div>
+              <div class="map-container" id="map-container" style="display:none">
+                <div id="map"></div>
+                <div class="map-coords"><i class="ti ti-map-pin"></i> <span id="map-coords-text"></span></div>
+              </div>
+              <div id="circumstances-wrap" style="display:none;margin-top:14px">
+                <div class="info-section-title">Circumstances</div>
+                <p id="circumstances" style="font-size:13px;color:var(--muted);line-height:1.7"></p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Share & social -->
+          <div class="form-card" style="margin-bottom:16px">
+            <div class="card-header"><h3><i class="ti ti-share"></i> Share this case</h3></div>
+            <div class="card-body">
+              <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Sharing this case could help locate this person. Please share widely.</p>
+              <div class="social-share" id="share-buttons"></div>
+            </div>
+          </div>
+
+          <!-- Submit tip CTA -->
+          <div style="background:var(--navy);border-radius:var(--radius-lg);padding:24px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:20px">
+            <div>
+              <h3 style="font-family:var(--font-serif);font-size:20px;color:#fff;margin-bottom:6px">Do you have information?</h3>
+              <p style="font-size:13px;color:rgba(255,255,255,.6)">Submit an anonymous or identified tip. Every detail helps.</p>
+            </div>
+            <button class="btn-primary" id="tip-cta-btn" onclick="location.href='tip.html'" style="flex-shrink:0"><i class="ti ti-message-report"></i> Submit a tip</button>
+          </div>
+
+        </div>
+
+        <!-- RIGHT SIDEBAR -->
+        <aside class="page-sidebar">
+
+          <!-- Case status card -->
+          <div class="sidebar-card">
+            <div class="card-header"><h3><i class="ti ti-info-circle"></i> Case status</h3></div>
+            <div class="card-body">
+              <div id="status-display" style="text-align:center;padding:10px 0">
+                <span id="status-badge"></span>
+                <p id="status-days" style="font-size:13px;color:var(--muted);margin-top:10px"></p>
+              </div>
+              <hr style="border:none;border-top:1px solid var(--border);margin:12px 0">
+              <div style="font-size:12px;color:var(--muted)">
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>Case number</span><strong id="case-num-side" style="color:var(--text)"></strong></div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>Category</span><strong id="case-cat" style="color:var(--text)"></strong></div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span>Risk level</span><strong id="case-risk" style="color:var(--text)"></strong></div>
+                <div style="display:flex;justify-content:space-between"><span>Reported</span><strong id="case-reported" style="color:var(--text)"></strong></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Police update controls (shown if police role) -->
+          <div class="sidebar-card" id="police-controls" style="display:none">
+            <div class="card-header"><h3><i class="ti ti-shield-check"></i> Officer controls</h3></div>
+            <div class="card-body">
+              <div style="margin-bottom:12px">
+                <div class="field-label" style="margin-bottom:6px">Update status</div>
+                <select id="status-select" class="field-select" style="margin-bottom:8px">
+                  <option value="reported">Reported</option>
+                  <option value="under_investigation">Under investigation</option>
+                  <option value="found_safe">Found safe</option>
+                  <option value="found_deceased">Found deceased</option>
+                  <option value="closed">Closed</option>
+                </select>
+                <button class="btn-submit" style="width:100%;justify-content:center;padding:9px" onclick="updateStatus()"><i class="ti ti-check"></i> Update status</button>
+              </div>
+              <div>
+                <div class="field-label" style="margin-bottom:6px">Add investigation note</div>
+                <textarea id="note-input" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:9px 12px;font-family:var(--font-sans);font-size:13px;resize:vertical;min-height:80px;background:var(--surface)" placeholder="Private note (police only)…"></textarea>
+                <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin:6px 0">
+                  <input type="checkbox" id="note-sensitive"> Mark as sensitive
+                </label>
+                <button class="btn-submit" style="width:100%;justify-content:center;padding:9px;background:var(--mint)" onclick="addNote()"><i class="ti ti-lock"></i> Save private note</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Investigation notes (police only) -->
+          <div class="sidebar-card" id="notes-card" style="display:none">
+            <div class="card-header"><h3><i class="ti ti-notes"></i> Investigation notes <span style="font-size:11px;color:var(--muted);font-weight:400">(police only)</span></h3></div>
+            <div class="card-body" id="notes-list" style="font-size:13px;max-height:300px;overflow-y:auto"></div>
+          </div>
+
+          <!-- Reporter contact (for own case or police) -->
+          <div class="sidebar-card" id="reporter-card" style="display:none">
+            <div class="card-header"><h3><i class="ti ti-user"></i> Reporter</h3></div>
+            <div class="card-body" style="font-size:13px">
+              <p id="reporter-name" style="font-weight:500;margin-bottom:4px"></p>
+              <p id="reporter-rel" style="color:var(--muted);margin-bottom:4px"></p>
+              <p id="reporter-phone" style="color:var(--muted)"></p>
+            </div>
+          </div>
+
+        </aside>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()"><i class="ti ti-x"></i></button>
+  <img id="lightbox-img" src="" alt="Case photo">
+</div>
+
+<!-- Auth modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header"><h2 id="modal-title">Sign in to Nipate</h2><button class="modal-close" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+    <div class="modal-tabs"><button class="modal-tab active" id="tab-login" onclick="switchTab('login')">Log in</button><button class="modal-tab" id="tab-signup" onclick="switchTab('signup')">Create account</button></div>
+    <div class="modal-body" id="panel-login">
+      <div class="field"><label>Email</label><input type="email" id="login-email"></div>
+      <div class="field"><label>Password</label><input type="password" id="login-password"></div>
+      <button class="modal-btn" onclick="doLogin()">Log in</button>
+      <div id="login-error" style="margin-top:10px;font-size:13px;color:var(--red);display:none;text-align:center"></div>
+    </div>
+    <div class="modal-body" id="panel-signup" style="display:none">
+      <div class="field-row">
+        <div class="field"><label>Full name</label><input type="text" id="signup-name"></div>
+        <div class="field"><label>Phone</label><input type="tel" id="signup-phone"></div>
+      </div>
+      <div class="field"><label>Email</label><input type="email" id="signup-email"></div>
+      <div class="field"><label>County</label><select id="signup-county"><option value="">Select…</option><option>Nairobi</option><option>Other</option></select></div>
+      <div class="field"><label>Password</label><input type="password" id="signup-password"></div>
+      <div class="field"><label>Confirm password</label><input type="password" id="signup-password-confirm"></div>
+      <button class="modal-btn" onclick="doSignup()">Create account</button>
+      <div id="signup-error" style="margin-top:10px;font-size:13px;color:var(--red);display:none;text-align:center"></div>
+    </div>
+    <div class="modal-footer"><p>Protected under Kenya's Data Protection Act 2019.</p></div>
+  </div>
+</div>
+<div class="toast" id="toast"><i class="ti ti-check"></i><span id="toast-msg"></span></div>
+
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/maps.js"></script>
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+  const supabase = createClient('https://vyxaxoilyilrvrwgyfil.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5eGF4b2lseWlscnZyd2d5ZmlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTQzODksImV4cCI6MjA5ODQ5MDM4OX0.ZBfLgdjd5OvaFq7PKtN17hQWh2s37s86WIPpqB0Wz3M');
+  const { data:{session} } = await supabase.auth.getSession();
+  window._session = session;
+  const role = session?.user?.app_metadata?.role || 'public_viewer';
+  window._role = role;
+  const isPolice = ['police_officer','admin'].includes(role);
+  if (session) document.getElementById('nav-login-btn').textContent = session.user.email.split('@')[0];
+
+  const caseId = new URLSearchParams(location.search).get('id');
+  if (!caseId) { document.getElementById('case-loading').innerHTML = '<p style="color:var(--red)">No case ID provided.</p>'; }
+  else loadCase();
+
+  const COLOURS = ['f1','f2','f3','f4'];
+  const statusBadge = {
+    reported:`<span class="badge badge-urgent" style="font-size:13px;padding:6px 14px">⚠ Reported</span>`,
+    under_investigation:`<span class="badge badge-inv" style="font-size:13px;padding:6px 14px">Under investigation</span>`,
+    found_safe:`<span class="badge badge-found" style="font-size:13px;padding:6px 14px">✓ Found safe</span>`,
+    found_deceased:`<span class="badge badge-closed" style="font-size:13px;padding:6px 14px">Found deceased</span>`,
+    closed:`<span class="badge badge-closed" style="font-size:13px;padding:6px 14px">Closed</span>`,
+  };
+
+  async function loadCase() {
+    const headers = session ? {Authorization:`Bearer ${session.access_token}`} : {};
+    try {
+      const res  = await fetch(`/api/cases/${caseId}`, {headers});
+      if (!res.ok) { document.getElementById('case-loading').innerHTML='<p style="color:var(--red)">Case not found or not yet published.</p>'; return; }
+      const c = await res.json();
+      window._case = c;
+      renderCase(c);
+      if (isPolice) loadNotes();
+    } catch {
+      document.getElementById('case-loading').innerHTML='<p style="color:var(--red)">Failed to load case. Please try again.</p>';
+    }
+  }
+
+  function renderCase(c) {
+    document.title = `${c.full_name} — Nipate`;
+    document.getElementById('case-loading').style.display = 'none';
+    document.getElementById('case-content').style.display = '';
+
+    // Hero
+    const initials = (c.full_name||'?').charAt(0).toUpperCase();
+    const heroPhoto = document.getElementById('hero-photo');
+    heroPhoto.textContent = initials;
+    heroPhoto.className = `case-photo-lg ${COLOURS[0]}`;
+    document.getElementById('hero-name').textContent = c.full_name;
+    document.getElementById('hero-case-number').textContent = c.case_number || caseId;
+    document.getElementById('hero-meta').textContent =
+      `${c.gender||''} · Age ${c.age||'?'} · ${c.last_seen_county} County · ${c.days_missing != null ? c.days_missing+' days missing' : ''}`;
+
+    // Hero action buttons
+    const isUrgent = c.risk_level==='urgent'||c.category==='child';
+    document.getElementById('hero-actions').innerHTML =
+      `<button class="share-btn" onclick="shareTo('whatsapp')"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>
+       <button class="share-btn twitter" onclick="shareTo('twitter')"><i class="ti ti-brand-twitter"></i> X/Twitter</button>
+       <button class="share-btn facebook" onclick="shareTo('facebook')"><i class="ti ti-brand-facebook"></i> Facebook</button>`;
+
+    // Images
+    const imgs = c.case_images || [];
+    if (imgs.length) {
+      document.getElementById('case-images').innerHTML = imgs.map(img =>
+        `<img class="case-img" src="${img.storage_url}" alt="Case photo" onclick="openLightbox('${img.storage_url}')">`
+      ).join('');
+    } else {
+      document.getElementById('case-images').innerHTML =
+        `<div class="case-img-placeholder ${COLOURS[0]}">${initials}</div>
+         <p style="grid-column:2/-1;font-size:13px;color:var(--muted);align-self:center">No photos uploaded for this case.</p>`;
+    }
+
+    // Physical description
+    document.getElementById('physical-desc').textContent = c.physical_description || 'No description provided.';
+    document.getElementById('detail-grid').innerHTML = [
+      ['Height', c.height_cm ? c.height_cm+'cm' : '—'],
+      ['Weight', c.weight_kg ? c.weight_kg+'kg' : '—'],
+      ['Complexion', c.complexion||'—'],
+      ['Hair', c.hair_description||'—'],
+      ['Marks / scars', c.distinguishing_marks||'—'],
+      ['Clothing', c.clothing_description||'—'],
+    ].map(([l,v]) => `<div class="detail-item"><span>${l}</span><strong>${v}</strong></div>`).join('');
+
+    // Location
+    document.getElementById('location-grid').innerHTML = [
+      ['Date last seen', c.last_seen_date||'—'],
+      ['Time last seen', c.last_seen_time||'Unknown'],
+      ['Location', c.last_seen_location||'—'],
+      ['County', (c.last_seen_county||'—')+' County'],
+    ].map(([l,v]) => `<div class="detail-item"><span>${l}</span><strong>${v}</strong></div>`).join('');
+
+    if (c.last_seen_lat && c.last_seen_lng) {
+      document.getElementById('map-container').style.display = '';
+      document.getElementById('map-coords-text').textContent = `${c.last_seen_lat.toFixed(5)}, ${c.last_seen_lng.toFixed(5)}`;
+      window.initMap = () => NipateMaps.initDisplay('map', {lat:c.last_seen_lat, lng:c.last_seen_lng}, c.last_seen_location);
+    }
+
+    if (c.circumstances) {
+      document.getElementById('circumstances-wrap').style.display = '';
+      document.getElementById('circumstances').textContent = c.circumstances;
+    }
+
+    // Social share buttons
+    const caseUrl = encodeURIComponent(location.href);
+    const shareText = encodeURIComponent(`⚠ MISSING: ${c.full_name}, Age ${c.age||'?'}, last seen in ${c.last_seen_county}. Please share!`);
+    document.getElementById('share-buttons').innerHTML =
+      `<a href="https://wa.me/?text=${shareText}%20${caseUrl}" target="_blank" class="share-btn" style="background:#ECFDF5;border-color:#6EE7B7;color:var(--mint)"><i class="ti ti-brand-whatsapp"></i> WhatsApp</a>
+       <a href="https://twitter.com/intent/tweet?text=${shareText}&url=${caseUrl}" target="_blank" class="share-btn twitter"><i class="ti ti-brand-twitter"></i> Twitter/X</a>
+       <a href="https://www.facebook.com/sharer/sharer.php?u=${caseUrl}" target="_blank" class="share-btn facebook"><i class="ti ti-brand-facebook"></i> Facebook</a>
+       <button class="share-btn" onclick="navigator.clipboard.writeText(location.href);showToast('Link copied!')"><i class="ti ti-link"></i> Copy link</button>`;
+
+    // Status sidebar
+    document.getElementById('status-badge').innerHTML = statusBadge[c.status]||c.status;
+    document.getElementById('status-days').textContent = c.status==='found_safe'
+      ? 'This person has been found safe.'
+      : c.days_missing != null ? `Missing for ${c.days_missing} day${c.days_missing!==1?'s':''}` : '';
+    document.getElementById('case-num-side').textContent = c.case_number||'—';
+    document.getElementById('case-cat').textContent = (c.category||'').replace('_',' ');
+    document.getElementById('case-risk').textContent = c.risk_level||'standard';
+    document.getElementById('case-reported').textContent = c.created_at ? new Date(c.created_at).toLocaleDateString() : '—';
+
+    // Tip CTA
+    document.getElementById('tip-cta-btn').onclick = () => location.href = `tip.html?case=${c.id}`;
+
+    // Police controls
+    if (isPolice) {
+      document.getElementById('police-controls').style.display = '';
+      document.getElementById('notes-card').style.display = '';
+      document.getElementById('status-select').value = c.status;
+      if (c.reporter_name || c.reporter_phone) {
+        document.getElementById('reporter-card').style.display = '';
+        document.getElementById('reporter-name').textContent = c.reporter_name||'—';
+        document.getElementById('reporter-rel').textContent = c.reporter_relationship||'';
+        document.getElementById('reporter-phone').textContent = c.reporter_phone||'';
+      }
+    }
+  }
+
+  async function loadNotes() {
+    const res = await fetch(`/api/cases/${caseId}/notes`, {headers:{Authorization:`Bearer ${session.access_token}`}});
+    const data = await res.json();
+    const notes = data.notes||[];
+    const el = document.getElementById('notes-list');
+    if (!notes.length) { el.innerHTML='<p style="color:var(--muted)">No investigation notes yet.</p>'; return; }
+    el.innerHTML = notes.map(n => `
+      <div style="padding:10px 0;border-bottom:1px solid var(--border)">
+        ${n.is_sensitive ? '<span class="badge badge-urgent" style="margin-bottom:6px">Sensitive</span>' : ''}
+        <p style="margin-bottom:4px;line-height:1.6">${n.content}</p>
+        <p style="font-size:11px;color:var(--muted)">${n.author?.full_name||'Officer'} · ${new Date(n.created_at).toLocaleString()}</p>
+      </div>`).join('');
+  }
+
+  window.updateStatus = async () => {
+    const status = document.getElementById('status-select').value;
+    const res = await fetch(`/api/cases/${caseId}/status`, {
+      method:'PATCH', headers:{Authorization:`Bearer ${session.access_token}`,'Content-Type':'application/json'},
+      body: JSON.stringify({status})
+    });
+    const data = await res.json();
+    showToast(res.ok ? data.message : (data.error||'Update failed.'), !res.ok);
+    if (res.ok) setTimeout(() => location.reload(), 1200);
+  };
+
+  window.addNote = async () => {
+    const content = document.getElementById('note-input').value.trim();
+    if (!content) { showToast('Note cannot be empty.', true); return; }
+    const res = await fetch(`/api/cases/${caseId}/notes`, {
+      method:'POST', headers:{Authorization:`Bearer ${session.access_token}`,'Content-Type':'application/json'},
+      body: JSON.stringify({content, is_sensitive: document.getElementById('note-sensitive').checked})
+    });
+    const data = await res.json();
+    showToast(res.ok ? 'Note saved.' : (data.error||'Failed.'), !res.ok);
+    if (res.ok) { document.getElementById('note-input').value=''; loadNotes(); }
+  };
+
+  window.shareTo = (platform) => {
+    const url = encodeURIComponent(location.href);
+    const c = window._case||{};
+    const text = encodeURIComponent(`⚠ MISSING: ${c.full_name||''}, Age ${c.age||'?'}, last seen in ${c.last_seen_county||''}. Please share and submit tips.`);
+    const links = {
+      twitter: `https://twitter.com/intent/tweet?text=${text}&url=${url}`,
+      facebook:`https://www.facebook.com/sharer/sharer.php?u=${url}`,
+      whatsapp:`https://wa.me/?text=${text}%20${url}`,
+    };
+    if (links[platform]) window.open(links[platform],'_blank');
+  };
+
+  window.openLightbox = (src) => { document.getElementById('lightbox-img').src=src; document.getElementById('lightbox').classList.add('open'); };
+  window.closeLightbox = () => document.getElementById('lightbox').classList.remove('open');
+
+  window.doLogin = async () => {
+    const {error} = await supabase.auth.signInWithPassword({email:document.getElementById('login-email').value.trim(),password:document.getElementById('login-password').value});
+    if(error){document.getElementById('login-error').textContent='Incorrect email or password.';document.getElementById('login-error').style.display='block';return;}
+    closeModal();showToast('Signed in.');setTimeout(()=>location.reload(),800);
+  };
+  window.doSignup = async () => {
+    const password = document.getElementById('signup-password').value;
+    const confirmPassword = document.getElementById('signup-password-confirm').value;
+    if (password !== confirmPassword) {
+      document.getElementById('signup-error').textContent = 'Passwords do not match.';
+      document.getElementById('signup-error').style.display = 'block';
+      return;
+    }
+    const {error} = await supabase.auth.signUp({email:document.getElementById('signup-email').value.trim(),password,options:{data:{full_name:document.getElementById('signup-name').value},emailRedirectTo:`${window.location.origin}/index.html`}});
+    if(error){document.getElementById('signup-error').textContent=error.message;document.getElementById('signup-error').style.display='block';return;}
+    closeModal();showToast('Account created! Check your email.');
+  };
+</script>
+<script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBIrT5rRbYkB6bHRAXSmasTy8JWXnqPq1E&callback=initMap"></script>
+</body>
+</html>

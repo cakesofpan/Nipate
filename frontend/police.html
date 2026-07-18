@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Police Portal — Nipate</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="assets/css/forms.css">
+  <style>
+    .queue-row { display:flex; align-items:center; gap:14px; padding:14px 18px; border-bottom:1px solid var(--border); cursor:pointer; transition:.15s; }
+    .queue-row:hover { background:var(--surface); }
+    .queue-row:last-child { border-bottom:none; }
+    .queue-row.dupe { background:#FFFBEB; }
+    .queue-info { flex:1; min-width:0; }
+    .queue-name { font-size:14px; font-weight:600; margin-bottom:2px; }
+    .queue-detail { font-size:12px; color:var(--muted); }
+    .tips-panel { max-height:420px; overflow-y:auto; }
+    .tip-row { padding:12px 16px; border-bottom:1px solid var(--border); font-size:13px; }
+    .tip-row:last-child { border-bottom:none; }
+    .tip-row-head { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+    .tip-content { color:var(--muted); line-height:1.6; font-size:12px; }
+    .send-alert-box { background:linear-gradient(135deg,var(--navy),var(--navy-mid)); border-radius:var(--radius-md); padding:16px; }
+    .send-alert-box h4 { color:#fff; font-size:14px; margin-bottom:10px; }
+    .send-alert-box label { display:flex; align-items:center; gap:8px; font-size:12px; color:rgba(255,255,255,.75); margin-bottom:8px; cursor:pointer; }
+    .send-alert-box label input { accent-color:var(--red); }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="container nav-inner">
+    <a href="index.html" class="nav-logo"><div class="logo-pulse"></div><div>Nipate<span class="logo-sub">Kenya Missing Persons</span></div></a>
+    <div class="nav-links">
+      <button class="nav-link" onclick="location.href='index.html'">Search Cases</button>
+      <button class="nav-link active">Police Portal</button>
+      <button class="nav-link" onclick="location.href='admin.html'">Admin</button>
+      <button class="nav-link" onclick="location.href='reports/index.html'">Reports</button>
+    </div>
+    <div class="nav-right">
+      <button class="nav-lang" onclick="toggleLanguage(this)">EN</button>
+      <span id="officer-badge" style="font-size:12px;color:rgba(255,255,255,.6);padding:5px 12px;background:rgba(255,255,255,.1);border-radius:20px;display:none"></span>
+      <button class="nav-login" id="nav-login-btn" onclick="openModal('login')">Log in</button>
+    </div>
+  </div>
+</nav>
+
+<div id="access-denied" style="display:none;text-align:center;padding:80px 0">
+  <i class="ti ti-lock" style="font-size:48px;color:var(--muted);display:block;margin-bottom:16px"></i>
+  <h2 style="font-size:20px;margin-bottom:8px">Police portal access required</h2>
+  <p style="color:var(--muted);margin-bottom:20px">You need a verified law enforcement account to access this portal.</p>
+  <button class="btn-primary" onclick="openModal('login')">Sign in</button>
+</div>
+
+<div id="portal-content" style="display:none">
+
+  <div class="page-header">
+    <div class="container page-header-inner">
+      <div>
+        <div class="page-breadcrumb"><a href="index.html">Home</a><span>›</span> Police Portal</div>
+        <h1 class="page-title">Police Portal</h1>
+        <p class="page-subtitle" id="officer-sub">Missing persons case management</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-body">
+    <div class="container">
+
+      <!-- Stats -->
+      <div class="admin-grid" id="police-stats" style="grid-template-columns:repeat(4,1fr)">
+        <div class="admin-stat red"><div class="lbl">New reports</div><div class="val" id="stat-pending">—</div><div class="sub">Not yet investigated</div></div>
+        <div class="admin-stat sky"><div class="lbl">Under investigation</div><div class="val" id="stat-inv">—</div><div class="sub">Active cases</div></div>
+        <div class="admin-stat gold"><div class="lbl">New tips</div><div class="val" id="stat-tips">—</div><div class="sub">Unreviewed</div></div>
+        <div class="admin-stat"><div class="lbl">Possible duplicates</div><div class="val" id="stat-dupes">—</div><div class="sub">Needs manual review</div></div>
+      </div>
+
+      <div class="page-tabs">
+        <button class="page-tab active" id="ptab-queue" onclick="showTab('queue')"><i class="ti ti-list-check"></i> Cases <span class="tab-count" id="cnt-queue">0</span></button>
+        <button class="page-tab" id="ptab-tips" onclick="showTab('tips')"><i class="ti ti-message-report"></i> Tips <span class="tab-count" id="cnt-tips">0</span></button>
+        <button class="page-tab" id="ptab-dupes" onclick="showTab('dupes')"><i class="ti ti-copy"></i> Duplicates <span class="tab-count" id="cnt-dupes">0</span></button>
+        <button class="page-tab" id="ptab-active" onclick="showTab('active')"><i class="ti ti-search"></i> Active cases</button>
+      </div>
+
+      <div class="page-layout">
+        <div>
+
+          <!-- QUEUE TAB -->
+          <div id="tab-queue">
+            <div class="form-card">
+              <div class="card-header"><h3><i class="ti ti-list-check"></i> All cases</h3></div>
+              <div id="queue-list"><div style="padding:30px;text-align:center;color:var(--muted)"><i class="ti ti-loader" style="animation:spin 1s linear infinite"></i> Loading…</div></div>
+            </div>
+          </div>
+
+          <!-- TIPS TAB -->
+          <div id="tab-tips" style="display:none">
+            <div class="form-card">
+              <div class="card-header">
+                <h3><i class="ti ti-message-report"></i> Submitted tips</h3>
+                <select class="filter-select" id="tips-status-filter" style="font-size:12px;padding:5px 10px" onchange="loadTips()">
+                  <option value="">All statuses</option>
+                  <option value="received">New / unreviewed</option>
+                  <option value="reviewed">Reviewed</option>
+                  <option value="under_investigation">Under investigation</option>
+                  <option value="resolved">Resolved</option>
+                </select>
+              </div>
+              <div class="tips-panel" id="tips-list"><div style="padding:30px;text-align:center;color:var(--muted)">Loading tips…</div></div>
+            </div>
+          </div>
+
+          <!-- DUPLICATES TAB -->
+          <div id="tab-dupes" style="display:none">
+            <div class="form-card">
+              <div class="card-header"><h3><i class="ti ti-copy"></i> Possible duplicate cases</h3></div>
+              <div id="dupes-list"><div style="padding:30px;text-align:center;color:var(--muted)">Loading…</div></div>
+            </div>
+          </div>
+
+          <!-- ACTIVE TAB -->
+          <div id="tab-active" style="display:none">
+            <div style="margin-bottom:12px;display:flex;gap:8px">
+              <input id="active-search" class="field-input" placeholder="Search active cases…" oninput="loadActiveCases()" style="flex:1;background:#fff">
+              <select class="filter-select" id="active-county" onchange="loadActiveCases()">
+                <option value="">All counties</option>
+                <option>Nairobi</option><option>Mombasa</option><option>Kisumu</option><option>Nakuru</option><option>All</option>
+              </select>
+            </div>
+            <div class="form-card">
+              <div id="active-list"><div style="padding:30px;text-align:center;color:var(--muted)">Loading cases…</div></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- SIDEBAR -->
+        <aside class="page-sidebar">
+          <div class="sidebar-card">
+            <div class="card-header"><h3><i class="ti ti-bell-ringing"></i> Send alert</h3></div>
+            <div class="card-body">
+              <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Send a verified alert for a case. Emails will go to all county subscribers.</p>
+              <div class="field-group" style="margin-bottom:12px">
+                <label class="field-label">Case ID or number</label>
+                <input id="alert-case-id" class="field-input" placeholder="NP-2024-00241 or case UUID">
+              </div>
+              <div class="send-alert-box">
+                <h4>Alert channels</h4>
+                <label><input type="checkbox" checked id="ch-email"> Email subscribers</label>
+                <label><input type="checkbox" id="ch-twitter"> Twitter / X</label>
+                <label><input type="checkbox" id="ch-facebook"> Facebook</label>
+                <label><input type="checkbox" id="ch-whatsapp"> WhatsApp broadcast</label>
+              </div>
+              <button class="btn-submit" style="width:100%;justify-content:center;margin-top:12px;background:var(--red)" onclick="sendAlert()">
+                <i class="ti ti-send"></i> Send verified alert
+              </button>
+            </div>
+          </div>
+
+          <div class="sidebar-card">
+            <div class="card-header"><h3><i class="ti ti-user-check"></i> Signed in as</h3></div>
+            <div class="card-body" style="font-size:13px">
+              <div id="officer-info" style="color:var(--muted)">Loading…</div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Auth modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header"><h2 id="modal-title">Police sign in</h2><button class="modal-close" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+    <div class="modal-tabs"><button class="modal-tab active" id="tab-login" onclick="switchTab('login')">Log in</button><button class="modal-tab" id="tab-signup" onclick="switchTab('signup')">Create account</button></div>
+    <div class="modal-body" id="panel-login">
+      <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="officer@nps.go.ke"></div>
+      <div class="field"><label>Password</label><input type="password" id="login-password"></div>
+      <button class="modal-btn" onclick="doLogin()">Sign in</button>
+      <div id="login-error" style="margin-top:10px;font-size:13px;color:var(--red);display:none;text-align:center"></div>
+    </div>
+    <div class="modal-body" id="panel-signup" style="display:none">
+      <div class="verify-notice" style="margin-bottom:12px"><div class="verify-notice-icon">🛡️</div><p><strong>Law enforcement accounts</strong> require manual verification by an administrator before the police portal can be accessed.</p></div>
+      <div class="field-row">
+        <div class="field"><label>Full name</label><input type="text" id="signup-name"></div>
+        <div class="field"><label>Badge number</label><input type="text" id="signup-badge"></div>
+      </div>
+      <div class="field"><label>Email (official)</label><input type="email" id="signup-email" placeholder="officer@nps.go.ke"></div>
+      <div class="field"><label>Station & county</label><input type="text" id="signup-station" placeholder="e.g. Westlands Police Station, Nairobi"></div>
+      <div class="field"><label>Password</label><input type="password" id="signup-password"></div>
+      <div class="field"><label>Confirm password</label><input type="password" id="signup-password-confirm"></div>
+      <button class="modal-btn" onclick="doSignup()">Request access</button>
+      <div id="signup-error" style="margin-top:10px;font-size:13px;color:var(--red);display:none;text-align:center"></div>
+    </div>
+    <div class="modal-footer"><p>Police accounts are manually verified. You will be notified by email once approved.</p></div>
+  </div>
+</div>
+<div class="toast" id="toast"><i class="ti ti-check"></i><span id="toast-msg"></span></div>
+
+<script src="assets/js/ui.js"></script>
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+  const supabase = createClient('https://vyxaxoilyilrvrwgyfil.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5eGF4b2lseWlscnZyd2d5ZmlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTQzODksImV4cCI6MjA5ODQ5MDM4OX0.ZBfLgdjd5OvaFq7PKtN17hQWh2s37s86WIPpqB0Wz3M');
+  const { data:{session} } = await supabase.auth.getSession();
+  window._session = session;
+
+  const role = session?.user?.app_metadata?.role||'public_viewer';
+  const isPolice = ['police_officer','admin'].includes(role);
+
+  if (!session || !isPolice) {
+    document.getElementById('access-denied').style.display = '';
+    if (session) {
+      document.getElementById('access-denied').querySelector('p').textContent = 'Your account does not have police portal access. Contact an administrator for verification.';
+    }
+  } else {
+    document.getElementById('portal-content').style.display = '';
+    const meta = session.user.app_metadata;
+    document.getElementById('nav-login-btn').textContent = (session.user.user_metadata?.full_name||'Officer').split(' ')[0];
+    document.getElementById('officer-badge').textContent = '✓ ' + role.replace('_',' ');
+    document.getElementById('officer-badge').style.display = '';
+    document.getElementById('officer-sub').textContent = `Welcome back, ${session.user.user_metadata?.full_name||'Officer'}`;
+    const profile = await fetch('/api/auth/me',{headers:{Authorization:`Bearer ${session.access_token}`}}).then(r=>r.json()).catch(()=>({}));
+    document.getElementById('officer-info').innerHTML =
+      `<strong style="color:var(--text);display:block;margin-bottom:4px">${profile.full_name||'Officer'}</strong>
+       <span style="display:block;margin-bottom:2px">${profile.police_station||''}</span>
+       <span style="display:block;margin-bottom:2px">${profile.county||''} County</span>
+       <span style="display:block;margin-bottom:8px">Badge: ${profile.police_badge_number||'—'}</span>
+       <span class="badge badge-found">✓ Verified law enforcement</span>`;
+    loadStats(); loadQueue();
+  }
+
+  async function authFetch(url, opts={}) {
+    return fetch(url, { ...opts, headers: { ...(opts.headers||{}), Authorization:`Bearer ${session.access_token}`, 'Content-Type':'application/json' } });
+  }
+
+  async function loadStats() {
+    const res = await authFetch('/api/admin/stats');
+    const d = await res.json();
+    document.getElementById('stat-pending').textContent = d.cases?.reported||'0';
+    document.getElementById('stat-inv').textContent    = d.cases?.under_investigation||'0';
+    document.getElementById('stat-tips').textContent   = d.tips?.received||'0';
+    document.getElementById('cnt-queue').textContent   = (d.cases?.reported||0) + (d.cases?.under_investigation||0);
+    document.getElementById('cnt-tips').textContent    = d.tips?.received||'0';
+
+    const dupes = await authFetch('/api/admin/duplicate-flags').then(r=>r.json());
+    const dupeCount = dupes.flagged?.length||0;
+    document.getElementById('stat-dupes').textContent = dupeCount;
+    document.getElementById('cnt-dupes').textContent  = dupeCount;
+  }
+
+  async function loadQueue() {
+    const res  = await authFetch('/api/cases?limit=50');
+    const data = await res.json();
+    const cases = data.cases||[];
+    document.getElementById('cnt-queue').textContent = cases.length;
+    const COLOURS = ['av-blue','av-orange','av-green','av-purple'];
+    if (!cases.length) { document.getElementById('queue-list').innerHTML='<div style="padding:30px;text-align:center;color:var(--muted)">No cases found.</div>'; return; }
+    document.getElementById('queue-list').innerHTML = cases.map((c,i)=>{
+      const initials = (c.full_name||'?').slice(0,2).toUpperCase();
+      const col = COLOURS[i%COLOURS.length];
+      const isDupe = !!c.possible_duplicate_of;
+      const statusColour = c.status==='reported'?'badge-urgent':c.status==='under_investigation'?'badge-inv':c.status==='found_safe'?'badge-found':'badge-closed';
+      return `<div class="queue-row${isDupe?' dupe':''}" onclick="location.href='case.html?id=${c.id}'">
+        <div class="queue-avatar ${col}">${initials}</div>
+        <div class="queue-info">
+          <div class="queue-name">${c.full_name} <span class="badge ${statusColour}" style="font-size:10px">${c.status?.replace('_',' ')}</span> <span style="font-size:11px;color:var(--muted);font-weight:400">${c.case_number||''}</span></div>
+          <div class="queue-detail">${c.gender||''}, Age ${c.age||'?'} · ${c.last_seen_location}, ${c.last_seen_county} · ${c.days_missing||'?'} days${isDupe?' · ⚠ Possible duplicate':''}</div>
+        </div>
+        <div class="row-actions" onclick="event.stopPropagation()">
+          <button class="act-btn" onclick="location.href='case.html?id=${c.id}'"><i class="ti ti-eye"></i> View</button>
+          ${c.status==='reported'?`<button class="act-btn approve" onclick="markInvestigating('${c.id}',this)"><i class="ti ti-search"></i> Investigate</button>`:''}
+          ${isDupe?`<button class="act-btn" onclick="showTab('dupes')"><i class="ti ti-copy"></i> Check dupe</button>`:''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  window.markInvestigating = async (id, btn) => {
+    btn.disabled=true; btn.textContent='Updating…';
+    const res = await authFetch(`/api/cases/${id}/status`,{method:'PATCH',body:JSON.stringify({status:'under_investigation'})});
+    const data = await res.json();
+    showToast(res.ok ? 'Case marked as under investigation.' : (data.error||'Failed.'), !res.ok);
+    if (res.ok) { loadQueue(); loadStats(); }
+    else { btn.disabled=false; btn.innerHTML='<i class="ti ti-search"></i> Investigate'; }
+  };
+
+  async function loadTips() {
+    const status = document.getElementById('tips-status-filter').value;
+    const url = `/api/tips${status?'?status='+status:''}`;
+    const res  = await authFetch(url);
+    const data = await res.json();
+    const tips = data.tips||[];
+    if (!tips.length) { document.getElementById('tips-list').innerHTML='<div style="padding:30px;text-align:center;color:var(--muted)">No tips found.</div>'; return; }
+    const catIcon = {sighting:'👁️',location_info:'📍',suspect_info:'🔍',other:'💬'};
+    document.getElementById('tips-list').innerHTML = tips.map(t=>
+      `<div class="tip-row">
+        <div class="tip-row-head">
+          <span>${catIcon[t.category]||'💬'}</span>
+          <span class="badge ${t.status==='received'?'badge-urgent':t.status==='resolved'?'badge-found':'badge-inv'}">${t.status}</span>
+          <span style="color:var(--muted);font-size:11px">${t.tip_number||''}</span>
+          <span style="margin-left:auto;font-size:11px;color:var(--muted)">${new Date(t.created_at).toLocaleDateString()}</span>
+        </div>
+        <p class="tip-content">${t.content}</p>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+          <span style="font-size:11px;color:var(--muted)">Case: <a href="case.html?id=${t.case_id}" style="color:var(--sky)">${t.case?.full_name||t.case_id}</a></span>
+          ${t.is_anonymous?'<span class="badge badge-closed" style="font-size:10px">Anonymous</span>':'<span class="badge badge-inv" style="font-size:10px">Identified</span>'}
+          <select style="font-size:11px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;margin-left:auto" onchange="updateTipStatus('${t.id}',this.value)">
+            <option value="">Update status…</option>
+            <option value="reviewed">Reviewed</option>
+            <option value="under_investigation">Under investigation</option>
+            <option value="resolved">Resolved</option>
+            <option value="dismissed">Dismiss</option>
+          </select>
+        </div>
+      </div>`
+    ).join('');
+  }
+
+  window.updateTipStatus = async (id, status) => {
+    if (!status) return;
+    const res = await authFetch(`/api/tips/${id}/status`,{method:'PATCH',body:JSON.stringify({status})});
+    const data = await res.json();
+    showToast(res.ok ? data.message : (data.error||'Failed.'), !res.ok);
+    if (res.ok) loadTips();
+  };
+
+  async function loadDupes() {
+    const res  = await authFetch('/api/admin/duplicate-flags');
+    const data = await res.json();
+    const flagged = data.flagged||[];
+    if (!flagged.length) { document.getElementById('dupes-list').innerHTML='<div style="padding:30px;text-align:center;color:var(--muted)">No duplicate flags. 🎉</div>'; return; }
+    document.getElementById('dupes-list').innerHTML = flagged.map(c=>
+      `<div class="queue-row">
+        <div class="queue-info">
+          <div class="queue-name">${c.full_name} <span class="badge badge-urgent" style="font-size:10px">New case</span></div>
+          <div class="queue-detail">DOB: ${c.date_of_birth} · ${c.last_seen_county} · ${c.case_number||''}</div>
+          <div class="queue-detail" style="margin-top:4px">Possible duplicate of: <strong>${c.duplicate_of?.full_name||'Unknown'}</strong> (${c.duplicate_of?.case_number||''})</div>
+        </div>
+        <div class="row-actions">
+          <button class="act-btn approve" onclick="location.href='case.html?id=${c.id}'"><i class="ti ti-eye"></i> Review</button>
+          <button class="act-btn" onclick="mergeCases('${c.possible_duplicate_of}','${c.id}',this)"><i class="ti ti-git-merge"></i> Merge</button>
+          <button class="act-btn approve" onclick="verifyCase('${c.id}',this)"><i class="ti ti-check"></i> Keep both</button>
+        </div>
+      </div>`
+    ).join('');
+  }
+
+  window.mergeCases = async (primaryId, dupeId, btn) => {
+    if (!confirm('Merge duplicate into primary? Tips and images will be moved. This cannot be undone.')) return;
+    btn.disabled=true;
+    const res = await authFetch('/api/admin/cases/merge',{method:'POST',body:JSON.stringify({primary_case_id:primaryId,duplicate_case_id:dupeId})});
+    const data = await res.json();
+    showToast(res.ok ? 'Cases merged successfully.' : (data.error||'Merge failed.'), !res.ok);
+    if (res.ok) loadDupes();
+  };
+
+  async function loadActiveCases() {
+    const q = document.getElementById('active-search')?.value||'';
+    const county = document.getElementById('active-county')?.value||'';
+    const params = new URLSearchParams({status:'under_investigation',limit:20});
+    if (q) params.set('q',q);
+    if (county) params.set('county',county);
+    const res  = await authFetch(`/api/cases?${params}`);
+    const data = await res.json();
+    const cases = data.cases||[];
+    if (!cases.length) { document.getElementById('active-list').innerHTML='<div style="padding:30px;text-align:center;color:var(--muted)">No active cases found.</div>'; return; }
+    document.getElementById('active-list').innerHTML = cases.map(c=>
+      `<div class="queue-row" onclick="location.href='case.html?id=${c.id}'">
+        <div class="queue-info">
+          <div class="queue-name">${c.full_name} <span style="font-size:11px;color:var(--muted)">${c.case_number||''}</span></div>
+          <div class="queue-detail"><i class="ti ti-map-pin"></i> ${c.last_seen_location}, ${c.last_seen_county} · ${c.days_missing||'?'} days · Age ${c.age||'?'}</div>
+        </div>
+        <div class="row-actions" onclick="event.stopPropagation()">
+          <button class="act-btn" onclick="location.href='case.html?id=${c.id}'"><i class="ti ti-eye"></i> View</button>
+          <button class="act-btn" onclick="location.href='tip.html?case=${c.id}'"><i class="ti ti-message-report"></i> Tips</button>
+        </div>
+      </div>`
+    ).join('');
+  }
+
+  window.showTab = (tab) => {
+    ['queue','tips','dupes','active'].forEach(t=>{
+      document.getElementById('tab-'+t).style.display = t===tab?'':'none';
+      document.getElementById('ptab-'+t).classList.toggle('active',t===tab);
+    });
+    if (tab==='tips') loadTips();
+    if (tab==='dupes') loadDupes();
+    if (tab==='active') loadActiveCases();
+  };
+
+  window.sendAlert = async () => {
+    const input = document.getElementById('alert-case-id').value.trim();
+    if (!input) { showToast('Please enter a case ID or case number.', true); return; }
+    const res = await authFetch('/api/alerts/send',{method:'POST',body:JSON.stringify({case_id:input})});
+    const data = await res.json();
+    showToast(res.ok ? data.message : (data.error||'Alert failed.'), !res.ok);
+  };
+
+  window.doLogin = async () => {
+    const {error} = await supabase.auth.signInWithPassword({email:document.getElementById('login-email').value.trim(),password:document.getElementById('login-password').value});
+    if(error){document.getElementById('login-error').textContent='Incorrect email or password.';document.getElementById('login-error').style.display='block';return;}
+    closeModal();showToast('Signed in.');setTimeout(()=>location.reload(),800);
+  };
+  window.doSignup = async () => {
+    const password = document.getElementById('signup-password').value;
+    const confirmPassword = document.getElementById('signup-password-confirm').value;
+    if (password !== confirmPassword) {
+      document.getElementById('signup-error').textContent = 'Passwords do not match.';
+      document.getElementById('signup-error').style.display = 'block';
+      return;
+    }
+    const {error} = await supabase.auth.signUp({email:document.getElementById('signup-email').value.trim(),password,options:{data:{full_name:document.getElementById('signup-name').value,police_badge_number:document.getElementById('signup-badge').value,police_station:document.getElementById('signup-station').value},emailRedirectTo:`${window.location.origin}/index.html`}});
+    if(error){document.getElementById('signup-error').textContent=error.message;document.getElementById('signup-error').style.display='block';return;}
+    closeModal();showToast('Account request submitted. An admin will review and verify your account within 24 hours.');
+  };
+</script>
+</body>
+</html>

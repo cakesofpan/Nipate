@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Search Missing Persons — Nipate</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="assets/css/forms.css">
+  <style>
+    .search-bar-wrap { background: var(--navy); padding: 20px 0 24px; }
+    .search-bar-inner { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+    .search-main { flex:1; min-width:220px; display:flex; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.15); border-radius:9px; overflow:hidden; }
+    .search-main input { flex:1; background:none; border:none; color:#fff; font-family:var(--font-sans); font-size:14px; padding:11px 16px; outline:none; }
+    .search-main input::placeholder { color:rgba(255,255,255,.4); }
+    .search-main button { background:var(--sky); border:none; color:#fff; padding:11px 18px; font-size:16px; cursor:pointer; }
+    .filter-bar { background:var(--card); border-bottom:1px solid var(--border); padding:12px 0; position:sticky; top:60px; z-index:100; }
+    .filter-bar-inner { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .filter-select { background:var(--surface); border:1px solid var(--border); font-family:var(--font-sans); font-size:13px; padding:7px 12px; border-radius:7px; color:var(--text); cursor:pointer; }
+    .filter-select:focus { outline:none; border-color:var(--sky); }
+    .filter-chip { background:var(--surface); border:1px solid var(--border); font-size:12px; padding:5px 12px; border-radius:20px; color:var(--muted); cursor:pointer; display:flex; align-items:center; gap:4px; white-space:nowrap; }
+    .filter-chip.active { background:var(--navy); border-color:var(--navy); color:#fff; }
+    .results-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+    .results-count { font-size:14px; color:var(--muted); }
+    .results-count strong { color:var(--text); }
+    .view-toggle { display:flex; gap:4px; }
+    .view-btn { background:var(--surface); border:1px solid var(--border); width:32px; height:32px; border-radius:6px; display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--muted); font-size:16px; transition:.15s; }
+    .view-btn.active { background:var(--navy); border-color:var(--navy); color:#fff; }
+    .cases-list { display:flex; flex-direction:column; gap:12px; margin-bottom:32px; }
+    .case-list-item { background:var(--card); border:1px solid var(--border); border-radius:var(--radius-md); padding:16px 18px; display:flex; align-items:center; gap:16px; cursor:pointer; transition:.15s; }
+    .case-list-item:hover { border-color:#93C5FD; box-shadow:var(--shadow-sm); }
+    .case-list-item.urgent { border-left:3px solid var(--red); }
+    .case-list-avatar { width:48px; height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-family:var(--font-serif); font-size:22px; color:rgba(255,255,255,.9); flex-shrink:0; }
+    .case-list-info { flex:1; min-width:0; }
+    .case-list-name { font-size:15px; font-weight:600; margin-bottom:2px; }
+    .case-list-meta { font-size:12px; color:var(--muted); display:flex; gap:12px; flex-wrap:wrap; }
+    .case-list-meta span { display:flex; align-items:center; gap:3px; }
+    .case-list-right { text-align:right; flex-shrink:0; }
+    .case-days-badge { font-size:12px; font-weight:500; color:var(--red); background:var(--badge-urgent-bg,#FEE2E2); padding:3px 10px; border-radius:20px; margin-bottom:6px; display:inline-block; }
+    .case-days-badge.found { color:var(--mint); background:#D1FAE5; }
+    .pagination { display:flex; justify-content:center; align-items:center; gap:6px; padding:8px 0 40px; }
+    .page-btn { background:var(--card); border:1px solid var(--border); width:36px; height:36px; border-radius:7px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:13px; color:var(--text); transition:.15s; }
+    .page-btn:hover { border-color:var(--sky); color:var(--sky); }
+    .page-btn.active { background:var(--navy); border-color:var(--navy); color:#fff; font-weight:500; }
+    .page-btn:disabled { opacity:.4; cursor:not-allowed; }
+    .no-results { text-align:center; padding:60px 0; color:var(--muted); }
+    .no-results i { font-size:48px; display:block; margin-bottom:12px; }
+    .skeleton { background:linear-gradient(90deg,var(--surface) 25%,var(--border) 50%,var(--surface) 75%); background-size:200% 100%; animation:shimmer 1.2s infinite; border-radius:8px; }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="container nav-inner">
+    <a href="index.html" class="nav-logo"><div class="logo-pulse"></div><div>Nipate<span class="logo-sub">Kenya Missing Persons</span></div></a>
+    <div class="nav-links">
+      <button class="nav-link active">Search Cases</button>
+      <button class="nav-link" onclick="location.href='report.html'">Report Missing</button>
+      <button class="nav-link" onclick="location.href='tip.html'">Submit Tip</button>
+      <button class="nav-link" onclick="location.href='police.html'">Police Portal</button>
+    </div>
+    <div class="nav-right">
+      <button class="nav-lang" onclick="toggleLanguage(this)">EN</button>
+      <button class="nav-login" id="nav-login-btn" onclick="openModal('login')">Log in</button>
+      <button class="nav-cta" onclick="location.href='report.html'"><i class="ti ti-plus"></i> Report Case</button>
+    </div>
+  </div>
+</nav>
+
+<!-- Search bar -->
+<div class="search-bar-wrap">
+  <div class="container">
+    <div class="page-breadcrumb" style="margin-bottom:10px"><a href="index.html" style="color:rgba(255,255,255,.45)">Home</a><span style="color:rgba(255,255,255,.25)">›</span><span style="color:rgba(255,255,255,.7)">Search Cases</span></div>
+    <div class="search-bar-inner">
+      <div class="search-main">
+        <input type="search" id="search-input" placeholder="Search by name, case number, or location…" oninput="debounceSearch()" onkeydown="if(event.key==='Enter')doSearch()">
+        <button onclick="doSearch()"><i class="ti ti-search"></i></button>
+      </div>
+      <button class="btn-primary" onclick="location.href='report.html'" style="padding:10px 18px;font-size:13px"><i class="ti ti-plus"></i> Report Missing</button>
+    </div>
+  </div>
+</div>
+
+<!-- Filter bar -->
+<div class="filter-bar">
+  <div class="container filter-bar-inner">
+    <select class="filter-select" id="filter-county" onchange="doSearch()">
+      <option value="">All counties</option>
+      <option>Nairobi</option><option>Mombasa</option><option>Kisumu</option><option>Nakuru</option>
+      <option>Eldoret</option><option>Thika</option><option>Machakos</option><option>Kakamega</option>
+      <option>Kilifi</option><option>Meru</option><option>Nyeri</option><option>Garissa</option>
+    </select>
+    <select class="filter-select" id="filter-category" onchange="doSearch()">
+      <option value="">All categories</option>
+      <option value="child">Children (under 18)</option>
+      <option value="adult">Adults</option>
+      <option value="elderly">Elderly (60+)</option>
+      <option value="vulnerable_adult">Vulnerable adult</option>
+      <option value="foreign_national">Foreign national</option>
+    </select>
+    <select class="filter-select" id="filter-status" onchange="doSearch()">
+      <option value="">All statuses</option>
+      <option value="reported">Reported</option>
+      <option value="under_investigation">Under investigation</option>
+      <option value="found_safe">Found safe</option>
+      <option value="found_deceased">Found deceased</option>
+    </select>
+    <div style="margin-left:auto;display:flex;gap:6px;align-items:center">
+      <button class="filter-chip active" id="chip-all" onclick="setRisk('')">All</button>
+      <button class="filter-chip" id="chip-urgent" onclick="setRisk('urgent')">⚠ Urgent only</button>
+    </div>
+  </div>
+</div>
+
+<main style="padding:28px 0 0">
+  <div class="container">
+    <div class="results-header">
+      <div class="results-count" id="results-count">Loading cases…</div>
+      <div class="view-toggle">
+        <button class="view-btn active" id="btn-grid" onclick="setView('grid')" title="Grid view"><i class="ti ti-layout-grid"></i></button>
+        <button class="view-btn" id="btn-list" onclick="setView('list')" title="List view"><i class="ti ti-list"></i></button>
+      </div>
+    </div>
+
+    <!-- Grid view -->
+    <div id="view-grid">
+      <div class="cases-grid" id="cases-grid"></div>
+    </div>
+
+    <!-- List view -->
+    <div id="view-list" style="display:none">
+      <div class="cases-list" id="cases-list"></div>
+    </div>
+
+    <div class="pagination" id="pagination"></div>
+  </div>
+</main>
+
+<!-- Auth modal (shared) -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header"><h2 id="modal-title">Sign in to Nipate</h2><button class="modal-close" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+    <div class="modal-tabs"><button class="modal-tab active" id="tab-login" onclick="switchTab('login')">Log in</button><button class="modal-tab" id="tab-signup" onclick="switchTab('signup')">Create account</button></div>
+    <div class="modal-body" id="panel-login">
+      <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="you@example.com"></div>
+      <div class="field"><label>Password</label><input type="password" id="login-password"></div>
+      <button class="modal-btn" onclick="doLogin()">Log in</button>
+      <div id="login-error" style="margin-top:10px;font-size:13px;color:var(--red);display:none;text-align:center"></div>
+    </div>
+    <div class="modal-body" id="panel-signup" style="display:none">
+      <div class="field-row">
+        <div class="field"><label>Full name</label><input type="text" id="signup-name"></div>
+        <div class="field"><label>Phone</label><input type="tel" id="signup-phone" placeholder="+254…"></div>
+      </div>
+      <div class="field"><label>Email</label><input type="email" id="signup-email"></div>
+      <div class="field"><label>County</label><select id="signup-county"><option value="">Select…</option><option>Nairobi</option><option>Mombasa</option><option>Other</option></select></div>
+      <div class="field"><label>Password</label><input type="password" id="signup-password"></div>
+      <div class="field"><label>Confirm password</label><input type="password" id="signup-password-confirm"></div>
+      <button class="modal-btn" onclick="doSignup()">Create account</button>
+      <div id="signup-error" style="margin-top:10px;font-size:13px;color:var(--red);display:none;text-align:center"></div>
+    </div>
+    <div class="modal-footer"><p>Protected under Kenya's Data Protection Act 2019.</p></div>
+  </div>
+</div>
+<div class="toast" id="toast"><i class="ti ti-check"></i><span id="toast-msg"></span></div>
+
+<script src="assets/js/ui.js"></script>
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+  const supabase = createClient('https://vyxaxoilyilrvrwgyfil.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5eGF4b2lseWlscnZyd2d5ZmlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTQzODksImV4cCI6MjA5ODQ5MDM4OX0.ZBfLgdjd5OvaFq7PKtN17hQWh2s37s86WIPpqB0Wz3M');
+  const { data:{ session } } = await supabase.auth.getSession();
+  window._session = session;
+  if (session) document.getElementById('nav-login-btn').textContent = session.user.email.split('@')[0];
+
+  let _currentView = 'grid';
+  let _currentPage = 1;
+  let _currentRisk = '';
+  let _total = 0;
+  const PER_PAGE = 12;
+  const COLOURS = ['f1','f2','f3','f4'];
+
+  const statusBadge = {
+    reported:            '<span class="badge badge-urgent">⚠ Reported</span>',
+    under_investigation: '<span class="badge badge-inv">Under investigation</span>',
+    found_safe:          '<span class="badge badge-found">✓ Found safe</span>',
+    found_deceased:      '<span class="badge badge-closed">Found deceased</span>',
+    closed:              '<span class="badge badge-closed">Closed</span>',
+  };
+
+  async function fetchCases(page=1) {
+    const q        = document.getElementById('search-input').value.trim();
+    const county   = document.getElementById('filter-county').value;
+    const category = document.getElementById('filter-category').value;
+    const status   = document.getElementById('filter-status').value;
+    const params   = new URLSearchParams({ limit: PER_PAGE, page, is_public: 'true' });
+    if (q)         params.set('q', q);
+    if (county)    params.set('county', county);
+    if (category)  params.set('category', category);
+    if (status)    params.set('status', status);
+    if (_currentRisk) params.set('risk_level', _currentRisk);
+
+    showSkeletons();
+    try {
+      const res  = await fetch(`/api/cases?${params}`);
+      const data = await res.json();
+      _total = data.total || 0;
+      _currentPage = page;
+      renderCases(data.cases || []);
+      renderPagination();
+      document.getElementById('results-count').innerHTML =
+        `<strong>${_total.toLocaleString()}</strong> case${_total !== 1 ? 's' : ''} found`;
+    } catch {
+      document.getElementById('cases-grid').innerHTML = '<p style="color:var(--muted)">Could not load cases. Please try again.</p>';
+    }
+  }
+
+  function renderCases(cases) {
+    if (!cases.length) {
+      const noRes = `<div class="no-results"><i class="ti ti-search"></i><p style="font-size:15px;font-weight:500;margin-bottom:8px">No cases found</p><p style="font-size:13px">Try adjusting your search or filters</p></div>`;
+      document.getElementById('cases-grid').innerHTML = noRes;
+      document.getElementById('cases-list').innerHTML = noRes;
+      return;
+    }
+    const today = new Date();
+    document.getElementById('cases-grid').innerHTML = cases.map((c,i) => {
+      const initials = (c.full_name||'?').charAt(0).toUpperCase();
+      const col = COLOURS[i % COLOURS.length];
+      const urgent = (c.risk_level==='urgent'||c.category==='child') ? ' urgent' : '';
+      const days = c.days_missing;
+      return `<article class="case-card${urgent}" onclick="location.href='case.html?id=${c.id}'" tabindex="0" role="listitem">
+        <div class="case-card-photo ${col}">${initials}<span class="photo-age">Age ${c.age||'?'}</span></div>
+        <div class="case-card-body">
+          <div class="case-card-badge">${statusBadge[c.status]||''}</div>
+          <div class="case-card-name">${c.full_name}</div>
+          <div class="case-card-meta">${c.gender||''} · ${c.last_seen_county} County</div>
+          <div class="case-card-location"><i class="ti ti-map-pin"></i> ${c.last_seen_location}</div>
+        </div>
+        <div class="case-card-footer">
+          ${c.status==='found_safe'
+            ? '<span class="case-days" style="color:var(--mint)">Found safe ✓</span>'
+            : `<span class="case-days"><strong>${days||'?'}</strong> day${days!==1?'s':''} missing</span>`}
+          <button class="tip-btn" onclick="event.stopPropagation();location.href='tip.html?case=${c.id}'">Tip</button>
+        </div>
+      </article>`;
+    }).join('');
+
+    document.getElementById('cases-list').innerHTML = cases.map((c,i) => {
+      const col = COLOURS[i % COLOURS.length];
+      const urgent = (c.risk_level==='urgent'||c.category==='child') ? ' urgent' : '';
+      const days = c.days_missing;
+      const daysBadge = c.status==='found_safe'
+        ? '<span class="case-days-badge found">Found safe ✓</span>'
+        : `<span class="case-days-badge">${days||'?'} day${days!==1?'s':''}</span>`;
+      return `<div class="case-list-item${urgent}" onclick="location.href='case.html?id=${c.id}'" tabindex="0">
+        <div class="case-list-avatar ${col}" style="background:var(--${col==='f1'?'red':'f2'==='f2'?'mint':'sky'})">${(c.full_name||'?').charAt(0).toUpperCase()}</div>
+        <div class="case-list-info">
+          <div class="case-list-name">${c.full_name} <span style="font-size:11px;color:var(--muted);font-weight:400">${c.case_number||''}</span></div>
+          <div class="case-list-meta">
+            <span><i class="ti ti-user"></i>${c.gender||''}, Age ${c.age||'?'}</span>
+            <span><i class="ti ti-map-pin"></i>${c.last_seen_location}, ${c.last_seen_county}</span>
+            <span><i class="ti ti-calendar"></i>Last seen ${c.last_seen_date||''}</span>
+            <span>${c.category||''}</span>
+          </div>
+        </div>
+        <div class="case-list-right">${daysBadge}${statusBadge[c.status]||''}<br>
+          <button class="tip-btn" style="margin-top:6px" onclick="event.stopPropagation();location.href='tip.html?case=${c.id}'">Submit tip</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderPagination() {
+    const total_pages = Math.ceil(_total / PER_PAGE);
+    if (total_pages <= 1) { document.getElementById('pagination').innerHTML=''; return; }
+    let html = `<button class="page-btn" onclick="fetchCases(${_currentPage-1})" ${_currentPage===1?'disabled':''}><i class="ti ti-chevron-left"></i></button>`;
+    for (let i=1; i<=total_pages; i++) {
+      if (i===1||i===total_pages||Math.abs(i-_currentPage)<=2) {
+        html += `<button class="page-btn${i===_currentPage?' active':''}" onclick="fetchCases(${i})">${i}</button>`;
+      } else if (Math.abs(i-_currentPage)===3) {
+        html += `<span style="padding:0 4px;color:var(--muted)">…</span>`;
+      }
+    }
+    html += `<button class="page-btn" onclick="fetchCases(${_currentPage+1})" ${_currentPage===total_pages?'disabled':''}><i class="ti ti-chevron-right"></i></button>`;
+    document.getElementById('pagination').innerHTML = html;
+  }
+
+  function showSkeletons() {
+    const sk = Array(6).fill(`<div style="height:220px" class="skeleton"></div>`).join('');
+    document.getElementById('cases-grid').innerHTML = `<div style="display:contents">${sk}</div>`;
+    document.getElementById('cases-list').innerHTML = Array(6).fill(`<div style="height:72px;border-radius:10px" class="skeleton"></div>`).join('');
+  }
+
+  window.setView = (v) => {
+    _currentView = v;
+    document.getElementById('view-grid').style.display = v==='grid' ? '' : 'none';
+    document.getElementById('view-list').style.display = v==='list' ? '' : 'none';
+    document.getElementById('btn-grid').classList.toggle('active', v==='grid');
+    document.getElementById('btn-list').classList.toggle('active', v==='list');
+  };
+
+  window.setRisk = (r) => {
+    _currentRisk = r;
+    document.getElementById('chip-all').classList.toggle('active', !r);
+    document.getElementById('chip-urgent').classList.toggle('active', !!r);
+    fetchCases(1);
+  };
+
+  let _debTimer;
+  window.debounceSearch = () => { clearTimeout(_debTimer); _debTimer = setTimeout(() => fetchCases(1), 350); };
+  window.doSearch = () => fetchCases(1);
+
+  window.doLogin = async () => {
+    const {error} = await supabase.auth.signInWithPassword({email:document.getElementById('login-email').value.trim(),password:document.getElementById('login-password').value});
+    if(error){document.getElementById('login-error').textContent='Incorrect email or password.';document.getElementById('login-error').style.display='block';return;}
+    closeModal();showToast('Signed in.');setTimeout(()=>location.reload(),800);
+  };
+  window.doSignup = async () => {
+    const password = document.getElementById('signup-password').value;
+    const confirmPassword = document.getElementById('signup-password-confirm').value;
+    if (password !== confirmPassword) {
+      document.getElementById('signup-error').textContent = 'Passwords do not match.';
+      document.getElementById('signup-error').style.display = 'block';
+      return;
+    }
+    const {error} = await supabase.auth.signUp({email:document.getElementById('signup-email').value.trim(),password,options:{data:{full_name:document.getElementById('signup-name').value,phone:document.getElementById('signup-phone').value,county:document.getElementById('signup-county').value},emailRedirectTo:`${window.location.origin}/index.html`}});
+    if(error){document.getElementById('signup-error').textContent=error.message;document.getElementById('signup-error').style.display='block';return;}
+    closeModal();showToast('Account created! Check your email.');
+  };
+
+  // Read URL params (from homepage filter links)
+  const qp = new URLSearchParams(location.search);
+  if (qp.get('q'))        document.getElementById('search-input').value = qp.get('q');
+  if (qp.get('county'))   document.getElementById('filter-county').value = qp.get('county');
+  if (qp.get('status'))   document.getElementById('filter-status').value = qp.get('status');
+  if (qp.get('risk'))     { _currentRisk = qp.get('risk'); setRisk(_currentRisk); }
+
+  fetchCases(1);
+</script>
+</body>
+</html>

@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Report Missing Person — Nipate</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="assets/css/forms.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="container nav-inner">
+    <a href="index.html" class="nav-logo">
+      <div class="logo-pulse"></div>
+      <div>Nipate<span class="logo-sub">Kenya Missing Persons</span></div>
+    </a>
+    <div class="nav-links">
+      <button class="nav-link" onclick="location.href='index.html'">Search Cases</button>
+      <button class="nav-link active">Report Missing</button>
+      <button class="nav-link" onclick="location.href='tip.html'">Submit Tip</button>
+      <button class="nav-link" onclick="location.href='police.html'">Police Portal</button>
+    </div>
+    <div class="nav-right">
+      <button class="nav-lang" onclick="toggleLanguage(this)">EN</button>
+      <button class="nav-login" onclick="openModal('login')">Log in</button>
+    </div>
+  </div>
+</nav>
+
+<div class="page-header">
+  <div class="container page-header-inner">
+    <div>
+      <div class="page-breadcrumb">
+        <a href="index.html">Home</a><span>›</span> Report Missing Person
+      </div>
+      <h1 class="page-title">Report a missing person</h1>
+      <p class="page-subtitle">Your report goes public immediately · Tips submitted remain private to you and investigators</p>
+    </div>
+  </div>
+</div>
+
+<div class="page-body">
+  <div class="container">
+    <div class="page-layout">
+
+      <!-- MAIN FORM -->
+      <div>
+        <!-- Auth gate — shown when not logged in -->
+        <div id="auth-gate" style="display:none" class="verify-notice">
+          <div class="verify-notice-icon">🔒</div>
+          <p><strong>Sign in required.</strong> You must be logged in with a verified account to submit a missing person report. <a href="#" onclick="openModal('login')" style="color:var(--sky)">Log in</a> or <a href="#" onclick="openModal('signup')" style="color:var(--sky)">create an account</a>.</p>
+        </div>
+
+        <div class="verify-notice">
+          <div class="verify-notice-icon">🪪</div>
+          <p><strong>Identity verification required.</strong> We run a quick automated check against your national ID, passport, or driving licence before your report can be submitted. Your details are used only for verification purposes under Kenya's Data Protection Act 2019.</p>
+        </div>
+
+        <div id="dupe-warning" style="display:none" class="verify-notice" style="background:#FEF2F2;border-color:#FCA5A5">
+          <div class="verify-notice-icon">⚠️</div>
+          <p id="dupe-warning-text"></p>
+        </div>
+
+        <form id="report-form" novalidate>
+
+          <!-- SECTION 1: Missing person -->
+          <div class="form-card">
+            <div class="card-header">
+              <h3><i class="ti ti-user"></i> Missing person's details</h3>
+            </div>
+            <div class="card-body">
+              <div class="form-section">
+                <div class="form-row">
+                  <div class="field-group">
+                    <label class="field-label">Full name <span class="req">*</span></label>
+                    <input id="full_name" class="field-input" placeholder="e.g. Amina Wanjiru" required>
+                    <span class="field-error" id="err-full_name"></span>
+                  </div>
+                  <div class="field-group">
+                    <label class="field-label">Alias / nickname</label>
+                    <input id="alias" class="field-input" placeholder="If known">
+                  </div>
+                </div>
+                <div class="form-row thirds">
+                  <div class="field-group">
+                    <label class="field-label">Date of birth <span class="req">*</span></label>
+                    <input id="date_of_birth" class="field-input" type="date" required>
+                    <span class="field-error" id="err-date_of_birth"></span>
+                  </div>
+                  <div class="field-group">
+                    <label class="field-label">Gender <span class="req">*</span></label>
+                    <select id="gender" class="field-select" required>
+                      <option value="">Select…</option>
+                      <option value="female">Female</option>
+                      <option value="male">Male</option>
+                      <option value="other">Other</option>
+                      <option value="unknown">Prefer not to say</option>
+                    </select>
+                  </div>
+                  <div class="field-group">
+                    <label class="field-label">Category <span class="req">*</span></label>
+                    <select id="category" class="field-select" required>
+                      <option value="adult">Adult (18–59)</option>
+                      <option value="child">Child (under 18)</option>
+                      <option value="elderly">Elderly (60+)</option>
+                      <option value="vulnerable_adult">Vulnerable adult</option>
+                      <option value="foreign_national">Foreign national</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="field-group">
+                    <label class="field-label">Nationality</label>
+                    <input id="nationality" class="field-input" placeholder="e.g. Kenyan" value="Kenyan">
+                  </div>
+                  <div class="field-group">
+                    <label class="field-label">National ID number <span class="field-hint">(of missing person, if known)</span></label>
+                    <input id="national_id_number" class="field-input" placeholder="Optional">
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-section">
+                <div class="form-section-title"><i class="ti ti-id"></i> Physical description</div>
+                <div class="form-row full">
+                  <div class="field-group">
+                    <label class="field-label">Full physical description <span class="req">*</span></label>
+                    <textarea id="physical_description" class="field-textarea" rows="3" placeholder="Height, build, skin complexion, hair, eye colour, any distinctive marks or scars…" required></textarea>
+                    <span class="field-error" id="err-physical_description"></span>
+                  </div>
+                </div>
+                <div class="form-row thirds">
+                  <div class="field-group">
+                    <label class="field-label">Height (cm)</label>
+                    <input id="height_cm" class="field-input" type="number" min="50" max="250" placeholder="e.g. 165">
+                  </div>
+                  <div class="field-group">
+                    <label class="field-label">Weight (kg)</label>
+                    <input id="weight_kg" class="field-input" type="number" min="10" max="300" placeholder="e.g. 60">
+                  </div>
+                  <div class="field-group">
+                    <label class="field-label">Complexion</label>
+                    <input id="complexion" class="field-input" placeholder="e.g. Light brown">
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="field-group">
+                    <label class="field-label">Distinguishing marks / scars</label>
+                    <input id="distinguishing_marks" class="field-input" placeholder="Tattoos, birthmarks, scars…">
+                  </div>
+                  <div class="field-group">
+                    <label class="field-label">Clothing last worn</label>
+                    <input id="clothing_description" class="field-input" placeholder="Colour, type, brand if known…">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 2: Last seen -->
+          <div class="form-card" style="margin-top:16px">
+            <div class="card-header">
+              <h3><i class="ti ti-map-pin"></i> Last seen information</h3>
+            </div>
+            <div class="card-body">
+              <div class="form-row">
+                <div class="field-group">
+                  <label class="field-label">Date last seen <span class="req">*</span></label>
+                  <input id="last_seen_date" class="field-input" type="date" required>
+                  <span class="field-error" id="err-last_seen_date"></span>
+                </div>
+                <div class="field-group">
+                  <label class="field-label">Time last seen</label>
+                  <input id="last_seen_time" class="field-input" type="time">
+                </div>
+              </div>
+              <div class="form-row full" style="margin-bottom:10px">
+                <div class="field-group">
+                  <label class="field-label">Location search <span class="req">*</span></label>
+                  <input id="location-search" class="field-input" placeholder="Search for the last seen location in Kenya…">
+                  <span class="field-hint">Type an address or landmark, or click directly on the map below</span>
+                </div>
+              </div>
+              <div class="map-container" style="margin-bottom:16px">
+                <div id="map"></div>
+                <div class="map-coords">
+                  <i class="ti ti-gps"></i>
+                  Coordinates: <span id="map-coords-text">Click map or search to set location</span>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="field-group">
+                  <label class="field-label">Location description <span class="req">*</span></label>
+                  <input id="last_seen_location" class="field-input" placeholder="e.g. Near Westlands roundabout, Nairobi" required>
+                  <span class="field-error" id="err-last_seen_location"></span>
+                </div>
+                <div class="field-group">
+                  <label class="field-label">County <span class="req">*</span></label>
+                  <select id="last_seen_county" class="field-select" required>
+                    <option value="">Select county…</option>
+                    <option>Nairobi</option><option>Mombasa</option><option>Kisumu</option>
+                    <option>Nakuru</option><option>Eldoret</option><option>Thika</option>
+                    <option>Machakos</option><option>Kakamega</option><option>Kilifi</option>
+                    <option>Meru</option><option>Nyeri</option><option>Garissa</option>
+                    <option>Malindi</option><option>Kitale</option><option>Other</option>
+                  </select>
+                  <span class="field-error" id="err-last_seen_county"></span>
+                </div>
+              </div>
+              <div class="form-row full">
+                <div class="field-group">
+                  <label class="field-label">Circumstances of disappearance</label>
+                  <textarea id="circumstances" class="field-textarea" rows="3" placeholder="Any known details about how or why the person went missing…"></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 3: Photos -->
+          <div class="form-card" style="margin-top:16px">
+            <div class="card-header">
+              <h3><i class="ti ti-photo"></i> Photos</h3>
+            </div>
+            <div class="card-body">
+              <div class="upload-zone" id="photo-zone" onclick="document.getElementById('photo-input').click()">
+                <div class="upload-zone-icon"><i class="ti ti-camera"></i></div>
+                <h4>Drop photos here or click to upload</h4>
+                <p>JPEG or PNG · Up to 10 MB each · Recent photos strongly preferred</p>
+                <div class="upload-preview" id="photo-preview"></div>
+              </div>
+              <input type="file" id="photo-input" accept="image/jpeg,image/png,image/webp" multiple style="display:none" onchange="previewPhotos(this)">
+            </div>
+          </div>
+
+          <!-- SECTION 4: Reporter -->
+          <div class="form-card" style="margin-top:16px">
+            <div class="card-header">
+              <h3><i class="ti ti-user-circle"></i> Your details & ID verification</h3>
+            </div>
+            <div class="card-body">
+              <div class="form-row">
+                <div class="field-group">
+                  <label class="field-label">Your relationship to the missing person <span class="req">*</span></label>
+                  <select id="reporter_relationship" class="field-select" required>
+                    <option value="">Select…</option>
+                    <option>Parent / Guardian</option>
+                    <option>Spouse / Partner</option>
+                    <option>Sibling</option>
+                    <option>Child</option>
+                    <option>Other family member</option>
+                    <option>Friend</option>
+                    <option>Colleague</option>
+                    <option>Community member</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+                <div class="field-group">
+                  <label class="field-label">Contact phone <span class="req">*</span></label>
+                  <input id="reporter_phone" class="field-input" type="tel" placeholder="+254…">
+                  <span class="field-error" id="err-reporter_phone"></span>
+                </div>
+              </div>
+              <div class="form-row full">
+                <div class="field-group">
+                  <label class="field-label">Identity verification <span class="req">*</span></label>
+
+                  <div id="id-verify-unverified" class="upload-zone" style="display:none">
+                    <div class="upload-zone-icon"><i class="ti ti-id-badge"></i></div>
+                    <h4>Verify your identity to submit</h4>
+                    <p>Quick automated check against your national ID, passport, or driving licence — usually takes under a minute.</p>
+                    <button type="button" class="btn-submit" id="verify-id-btn" style="margin-top:14px" onclick="startDiditVerification()">
+                      <i class="ti ti-shield-check"></i> Verify my identity
+                    </button>
+                  </div>
+
+                  <div id="id-verify-pending" class="verify-notice" style="display:none;background:#FFFBEB;border-color:#FCD34D">
+                    <p><i class="ti ti-clock"></i> <strong>Verification in review.</strong> Your identity check is being reviewed — this can take a little longer than the automated check. We'll email you once it's done, and you can come back to submit your report then.</p>
+                  </div>
+
+                  <div id="id-verify-rejected" class="verify-notice" style="display:none;background:#FEF2F2;border-color:#FCA5A5">
+                    <p><i class="ti ti-alert-triangle"></i> <strong>Verification unsuccessful.</strong> We couldn't verify your identity with that attempt. <button type="button" class="btn-submit" style="margin-left:8px;padding:6px 14px;font-size:13px" onclick="startDiditVerification()">Try again</button></p>
+                  </div>
+
+                  <div id="id-verify-verified" class="verify-notice" style="display:none;background:#F0FDF4;border-color:#86EFAC">
+                    <p><i class="ti ti-circle-check"></i> <strong>Identity verified.</strong> You're clear to submit your report.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="submit-bar">
+            <p class="submit-note">By submitting you agree to our <a href="privacy.html">Privacy Policy</a>. Protected under Kenya's Data Protection Act 2019.</p>
+            <button type="button" class="btn-submit" id="submit-btn" onclick="submitReport()">
+              <i class="ti ti-send"></i> Submit report
+            </button>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- SIDEBAR -->
+      <aside class="page-sidebar">
+        <div class="sidebar-card">
+          <div class="card-header"><h3><i class="ti ti-info-circle"></i> What happens next</h3></div>
+          <div class="card-body" style="font-size:13px;line-height:1.7;color:var(--muted)">
+            <p style="margin-bottom:10px">1. Your report is submitted and <strong style="color:var(--text)">published immediately</strong> with a case number.</p>
+            <p style="margin-bottom:10px">2. The public and investigators can see the case straight away.</p>
+            <p style="margin-bottom:10px">3. Tips from the public are <strong style="color:var(--text)">private</strong> — only you (the reporter) and police can read them.</p>
+            <p>4. You will be notified by email of any status changes or new tips.</p>
+          </div>
+        </div>
+        <div class="sidebar-card">
+          <div class="card-header"><h3><i class="ti ti-shield-check"></i> Your data & privacy</h3></div>
+          <div class="card-body" style="font-size:13px;line-height:1.7;color:var(--muted)">
+            <p>Your ID document is stored in an encrypted private bucket and only accessed by authorised administrators for verification. It is never shared publicly.</p>
+            <p style="margin-top:8px">Your personal contact details are never shown publicly — only the case details you provide are visible.</p>
+          </div>
+        </div>
+        <div class="sidebar-card">
+          <div class="card-header"><h3><i class="ti ti-phone"></i> Emergency?</h3></div>
+          <div class="card-body" style="font-size:13px">
+            <p style="color:var(--muted);margin-bottom:10px">If this is an immediate emergency, contact police directly.</p>
+            <a href="tel:999" style="display:flex;align-items:center;gap:8px;background:var(--red);color:#fff;padding:10px 14px;border-radius:8px;font-weight:500;font-size:14px">
+              <i class="ti ti-phone-call"></i> Call 999 (Emergency)
+            </a>
+            <a href="tel:0800723538" style="display:flex;align-items:center;gap:8px;background:var(--surface);color:var(--text);border:1px solid var(--border);padding:10px 14px;border-radius:8px;font-size:13px;margin-top:8px">
+              <i class="ti ti-phone"></i> DCI Hotline: 0800 722 538
+            </a>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-title">Sign in to Nipate</h2>
+      <button class="modal-close" onclick="closeModal()"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" id="tab-login" onclick="switchTab('login')">Log in</button>
+      <button class="modal-tab" id="tab-signup" onclick="switchTab('signup')">Create account</button>
+    </div>
+    <div class="modal-body" id="panel-login">
+      <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="you@example.com"></div>
+      <div class="field"><label>Password</label><input type="password" id="login-password" placeholder="Password"></div>
+      <button class="modal-btn" onclick="doLogin()">Log in</button>
+      <div id="login-error" style="margin-top:10px;font-size:13px;color:var(--red);display:none;text-align:center"></div>
+    </div>
+    <div class="modal-body" id="panel-signup" style="display:none">
+      <div class="field-row">
+        <div class="field"><label>Full name</label><input type="text" id="signup-name" placeholder="Your full name"></div>
+        <div class="field"><label>Phone</label><input type="tel" id="signup-phone" placeholder="+254…"></div>
+      </div>
+      <div class="field"><label>Email</label><input type="email" id="signup-email" placeholder="you@example.com"></div>
+      <div class="field"><label>County</label>
+        <select id="signup-county"><option value="">Select…</option><option>Nairobi</option><option>Mombasa</option><option>Kisumu</option><option>Nakuru</option><option>Other</option></select>
+      </div>
+      <div class="field"><label>Password</label><input type="password" id="signup-password" placeholder="Min 8 chars, 1 number, 1 uppercase"></div>
+      <div class="field"><label>Confirm password</label><input type="password" id="signup-password-confirm" placeholder="Re-enter your password"></div>
+      <button class="modal-btn" onclick="doSignup()">Create account</button>
+      <div id="signup-error" style="margin-top:10px;font-size:13px;color:var(--red);display:none;text-align:center"></div>
+    </div>
+    <div class="modal-footer"><p>Protected under Kenya's Data Protection Act 2019.</p></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><i class="ti ti-check"></i><span id="toast-msg"></span></div>
+
+<script src="assets/js/ui.js"></script>
+<script src="assets/js/maps.js"></script>
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+  const SUPABASE_URL = 'https://vyxaxoilyilrvrwgyfil.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5eGF4b2lseWlscnZyd2d5ZmlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTQzODksImV4cCI6MjA5ODQ5MDM4OX0.ZBfLgdjd5OvaFq7PKtN17hQWh2s37s86WIPpqB0Wz3M';
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  window._supabase = supabase;
+
+  const { data: { session } } = await supabase.auth.getSession();
+  window._session = session;
+  window._idVerified = false;
+
+  if (!session) {
+    document.getElementById('auth-gate').style.display = 'flex';
+    document.getElementById('submit-btn').disabled = true;
+  } else {
+    document.querySelector('.nav-login').textContent = session.user.email.split('@')[0];
+    document.getElementById('submit-btn').disabled = true; // re-enabled once id_verified is confirmed
+    _setVerifyPanel('unverified'); // sensible default while we check the real status below
+    await handleDiditReturn();
+    if (!window._idVerified) await refreshVerificationStatus();
+  }
+
+  window.doLogin = async () => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email: document.getElementById('login-email').value.trim(),
+      password: document.getElementById('login-password').value,
+    });
+    if (error) { document.getElementById('login-error').textContent = 'Incorrect email or password.'; document.getElementById('login-error').style.display = 'block'; return; }
+    closeModal(); showToast('Signed in successfully.'); setTimeout(() => location.reload(), 800);
+  };
+  window.doSignup = async () => {
+    const password = document.getElementById('signup-password').value;
+    const confirmPassword = document.getElementById('signup-password-confirm').value;
+    if (password !== confirmPassword) {
+      document.getElementById('signup-error').textContent = 'Passwords do not match.';
+      document.getElementById('signup-error').style.display = 'block';
+      return;
+    }
+    const { error } = await supabase.auth.signUp({
+      email: document.getElementById('signup-email').value.trim(),
+      password,
+      options: {
+        data: { full_name: document.getElementById('signup-name').value, phone: document.getElementById('signup-phone').value, county: document.getElementById('signup-county').value },
+        emailRedirectTo: `${window.location.origin}/index.html`,
+      }
+    });
+    if (error) { document.getElementById('signup-error').textContent = error.message; document.getElementById('signup-error').style.display = 'block'; return; }
+    closeModal(); showToast('Account created! Check your email to confirm.');
+  };
+
+  // Map integration
+  window._pickedLocation = {};
+  window.initMap = () => {
+    NipateMaps.initPicker('map', ({ lat, lng, address, county }) => {
+      window._pickedLocation = { lat, lng };
+      if (address && !document.getElementById('last_seen_location').value) document.getElementById('last_seen_location').value = address;
+      if (county && !document.getElementById('last_seen_county').value) {
+        const sel = document.getElementById('last_seen_county');
+        for (let opt of sel.options) { if (opt.value === county || opt.text === county) { sel.value = opt.value; break; } }
+      }
+    });
+  };
+
+  // Dedup check on name+dob blur
+  async function checkDuplicates() {
+    const name = document.getElementById('full_name').value.trim();
+    const dob  = document.getElementById('date_of_birth').value;
+    const county = document.getElementById('last_seen_county').value;
+    if (!name || !dob || !county) return;
+    try {
+      const token = window._session?.access_token;
+      const res = await fetch('/api/cases/dedup-check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ full_name: name, date_of_birth: dob, last_seen_county: county }),
+      });
+      const data = await res.json();
+      if (data.has_duplicates) {
+        const names = data.possible_duplicates.map(d => `${d.full_name} (${d.case_number})`).join(', ');
+        document.getElementById('dupe-warning-text').innerHTML = `<strong>Possible duplicate detected.</strong> A similar case already exists: ${names}. Please <a href="cases.html" style="color:var(--sky)">search existing cases</a> before submitting to avoid duplicates.`;
+        document.getElementById('dupe-warning').style.display = 'flex';
+      } else {
+        document.getElementById('dupe-warning').style.display = 'none';
+      }
+    } catch {}
+  }
+  document.getElementById('full_name').addEventListener('blur', checkDuplicates);
+  document.getElementById('date_of_birth').addEventListener('change', checkDuplicates);
+  document.getElementById('last_seen_county').addEventListener('change', checkDuplicates);
+
+  window.previewPhotos = (input) => {
+    const preview = document.getElementById('photo-preview');
+    preview.innerHTML = '';
+    [...input.files].forEach(f => {
+      const img = document.createElement('img');
+      img.className = 'upload-thumb';
+      img.src = URL.createObjectURL(f);
+      preview.appendChild(img);
+    });
+  };
+
+  window.submitReport = async () => {
+    const btn = document.getElementById('submit-btn');
+    if (!window._session) { openModal('login'); return; }
+    if (!window._idVerified) { showToast('Please verify your identity before submitting.', true); return; }
+
+    // Collect form values
+    const fields = ['full_name','alias','date_of_birth','gender','category','nationality',
+      'national_id_number','physical_description','height_cm','weight_kg','complexion',
+      'distinguishing_marks','clothing_description','last_seen_date','last_seen_time',
+      'last_seen_location','last_seen_county','circumstances','reporter_relationship','reporter_phone'];
+
+    const body = {};
+    fields.forEach(f => { const el = document.getElementById(f); if (el) body[f] = el.value.trim() || undefined; });
+    if (window._pickedLocation.lat) { body.last_seen_lat = window._pickedLocation.lat; body.last_seen_lng = window._pickedLocation.lng; }
+
+    // Basic validation
+    const required = ['full_name','date_of_birth','physical_description','last_seen_date','last_seen_location','last_seen_county'];
+    let valid = true;
+    required.forEach(f => {
+      const err = document.getElementById('err-' + f);
+      if (!body[f]) { if (err) { err.textContent = 'This field is required.'; err.classList.add('visible'); } valid = false; }
+      else { if (err) err.classList.remove('visible'); }
+    });
+    if (!valid) { showToast('Please fill in all required fields.', true); return; }
+
+    btn.classList.add('loading'); btn.disabled = true;
+
+    try {
+      const res = await fetch('/api/cases', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${window._session.access_token}` },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) { showToast(data.errors?.[0] || data.error || 'Submission failed.', true); btn.classList.remove('loading'); btn.disabled = false; return; }
+
+      // Upload photos if any
+      const photoInput = document.getElementById('photo-input');
+      if (photoInput.files.length) {
+        for (const file of photoInput.files) {
+          const fd = new FormData(); fd.append('photo', file);
+          await fetch(`/api/cases/${data.case_id}/photos`, { method: 'POST', headers: { Authorization: `Bearer ${window._session.access_token}` }, body: fd }).catch(() => {});
+        }
+      }
+
+      showToast(`Report published! Case number: ${data.case_number}`);
+      setTimeout(() => location.href = `case.html?id=${data.case_id}`, 1800);
+    } catch { showToast('Network error. Please try again.', true); btn.classList.remove('loading'); btn.disabled = false; }
+  };
+
+  /* ── Didit identity verification ─────────────────────────────────
+   * Gate: the submit button stays disabled until id_verified is true.
+   * Flow: verify-id/start → redirect to Didit's hosted flow → Didit
+   * redirects back here with ?verificationSessionId=...&status=...
+   * → we poll /api/auth/me briefly for the webhook-confirmed result
+   * (the query-string status reflects what the user just did, but our
+   * database only updates once Didit's webhook lands, which is usually
+   * near-instant but not guaranteed to have arrived yet).
+   */
+  function _setVerifyPanel(state) {
+    ['unverified', 'pending', 'rejected', 'verified'].forEach(s => {
+      const el = document.getElementById(`id-verify-${s}`);
+      if (el) el.style.display = (s === state) ? (s === 'unverified' ? 'block' : 'flex') : 'none';
+    });
+    const btn = document.getElementById('submit-btn');
+    if (btn) btn.disabled = (state !== 'verified') || !window._session;
+    window._idVerified = (state === 'verified');
+  }
+
+  async function refreshVerificationStatus() {
+    if (!window._session) return null;
+    try {
+      const res = await fetch('/api/auth/me', {
+        headers: { Authorization: `Bearer ${window._session.access_token}` },
+      });
+      if (!res.ok) return null;
+      const me = await res.json();
+      const status = me.id_verified ? 'approved' : (me.id_verification_status || 'not_submitted');
+      _setVerifyPanel(status === 'approved' ? 'verified' : status === 'pending' ? 'pending' : status === 'rejected' ? 'rejected' : 'unverified');
+      return me;
+    } catch {
+      return null;
+    }
+  }
+
+  window.startDiditVerification = async () => {
+    if (!window._session) { openModal('login'); return; }
+    const btn = document.getElementById('verify-id-btn');
+    if (btn) { btn.disabled = true; btn.classList.add('loading'); }
+    try {
+      // Strip any previous callback params so Didit appends a clean pair.
+      const callbackUrl = `${window.location.origin}${window.location.pathname}`;
+      const res = await fetch('/api/auth/verify-id/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${window._session.access_token}` },
+        body: JSON.stringify({ callback_url: callbackUrl }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.verification_url) {
+        showToast(data.error || 'Could not start identity verification. Please try again.', true);
+        if (btn) { btn.disabled = false; btn.classList.remove('loading'); }
+        return;
+      }
+      window.location.href = data.verification_url;
+    } catch {
+      showToast('Network error starting verification. Please try again.', true);
+      if (btn) { btn.disabled = false; btn.classList.remove('loading'); }
+    }
+  };
+
+  async function handleDiditReturn() {
+    const params = new URLSearchParams(window.location.search);
+    const returnedStatus = params.get('status');
+    if (!params.has('verificationSessionId') && !returnedStatus) return;
+
+    // Clean the URL so a page refresh doesn't re-trigger this.
+    window.history.replaceState({}, '', window.location.pathname);
+
+    if (returnedStatus === 'Declined') {
+      showToast('Identity verification was not successful. Please try again.', true);
+      _setVerifyPanel('rejected');
+      return;
+    }
+    if (returnedStatus === 'In Review') {
+      showToast("Your verification is being reviewed — we'll email you once it's done.");
+      _setVerifyPanel('pending');
+      return;
+    }
+
+    // Approved (or otherwise) — poll briefly for the webhook to land, since
+    // the DB update happens asynchronously and may trail the redirect by a
+    // second or two.
+    showToast('Finishing up your verification…');
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const me = await refreshVerificationStatus();
+      if (me?.id_verified) { showToast('Identity verified — you can now submit your report.'); return; }
+      await new Promise(r => setTimeout(r, 1500));
+    }
+    showToast("Still confirming your verification — refresh this page in a moment if it doesn't update.", true);
+  }
+</script>
+<script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBIrT5rRbYkB6bHRAXSmasTy8JWXnqPq1E&libraries=places&callback=initMap&loading=async"></script>
+</body>
+</html>

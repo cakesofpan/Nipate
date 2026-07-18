@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel — Nipate</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <link rel="stylesheet" href="assets/css/main.css">
+  <link rel="stylesheet" href="assets/css/forms.css">
+  <style>
+    .user-row { display:flex; align-items:center; gap:12px; padding:12px 18px; border-bottom:1px solid var(--border); font-size:13px; }
+    .user-row:last-child { border-bottom:none; }
+    .user-row:hover { background:var(--surface); }
+    .user-info { flex:1; min-width:0; }
+    .user-name { font-weight:500; margin-bottom:1px; }
+    .user-meta { font-size:11px; color:var(--muted); }
+    .id-doc-row { display:flex; align-items:center; gap:12px; padding:14px 18px; border-bottom:1px solid var(--border); font-size:13px; }
+    .id-doc-row:last-child { border-bottom:none; }
+    .audit-row { padding:10px 18px; border-bottom:1px solid var(--border); font-size:12px; display:flex; align-items:center; gap:10px; }
+    .audit-row:last-child { border-bottom:none; }
+    .method-badge { font-size:10px; font-weight:600; padding:2px 7px; border-radius:4px; font-family:monospace; }
+    .method-POST   { background:#D1FAE5; color:#065F46; }
+    .method-PATCH  { background:#DBEAFE; color:#1D4ED8; }
+    .method-DELETE { background:#FEE2E2; color:#991B1B; }
+    .method-GET    { background:#F3F4F6; color:#4B5563; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="container nav-inner">
+    <a href="index.html" class="nav-logo"><div class="logo-pulse"></div><div>Nipate<span class="logo-sub">Admin Panel</span></div></a>
+    <div class="nav-links">
+      <button class="nav-link" onclick="location.href='index.html'">Public site</button>
+      <button class="nav-link" onclick="location.href='police.html'">Police portal</button>
+      <button class="nav-link active">Admin</button>
+      <button class="nav-link" onclick="location.href='reports/index.html'">Reports</button>
+    </div>
+    <div class="nav-right">
+      <button class="nav-login" id="nav-login-btn" onclick="openModal('login')">Log in</button>
+    </div>
+  </div>
+</nav>
+
+<div id="access-denied" style="display:none;text-align:center;padding:80px 0">
+  <i class="ti ti-shield-lock" style="font-size:48px;color:var(--muted);display:block;margin-bottom:16px"></i>
+  <h2 style="font-size:20px;margin-bottom:8px">Admin access required</h2>
+  <p style="color:var(--muted);margin-bottom:20px">You need an administrator account to access this panel.</p>
+  <button class="btn-primary" onclick="openModal('login')">Sign in</button>
+</div>
+
+<div id="admin-content" style="display:none">
+  <div class="page-header">
+    <div class="container page-header-inner">
+      <div><h1 class="page-title">Admin Panel</h1><p class="page-subtitle">Platform management and configuration</p></div>
+    </div>
+  </div>
+
+  <div class="page-body">
+    <div class="container">
+
+      <!-- Stats grid -->
+      <div class="admin-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:28px">
+        <div class="admin-stat red"><div class="lbl">Total users</div><div class="val" id="as-users">—</div><div class="sub" id="as-police">— officers</div></div>
+        <div class="admin-stat sky"><div class="lbl">Active cases</div><div class="val" id="as-active">—</div><div class="sub" id="as-unverified">— unverified</div></div>
+        <div class="admin-stat gold"><div class="lbl">Pending ID review</div><div class="val" id="as-pending-id">—</div><div class="sub">Awaiting verification</div></div>
+        <div class="admin-stat mint"><div class="lbl">Alert subscribers</div><div class="val" id="as-subs">—</div><div class="sub">Active subscriptions</div></div>
+      </div>
+
+      <div class="page-tabs">
+        <button class="page-tab active" id="atab-id"    onclick="showTab('id')"><i class="ti ti-id-badge"></i> ID verification <span class="tab-count" id="cnt-id">0</span></button>
+        <button class="page-tab" id="atab-users"  onclick="showTab('users')"><i class="ti ti-users"></i> Users</button>
+        <button class="page-tab" id="atab-audit"  onclick="showTab('audit')"><i class="ti ti-history"></i> Audit log</button>
+        <button class="page-tab" id="atab-subs"   onclick="showTab('subs')"><i class="ti ti-bell"></i> Subscribers</button>
+      </div>
+
+      <!-- ID VERIFICATION TAB -->
+      <div id="tab-id">
+        <div class="form-card">
+          <div class="card-header"><h3><i class="ti ti-id-badge"></i> Pending ID verification submissions</h3></div>
+          <div id="id-list"><div style="padding:30px;text-align:center;color:var(--muted)">Loading…</div></div>
+        </div>
+      </div>
+
+      <!-- USERS TAB -->
+      <div id="tab-users" style="display:none">
+        <div style="display:flex;gap:8px;margin-bottom:14px">
+          <input id="user-search" class="field-input" placeholder="Search by name or email…" oninput="loadUsers()" style="flex:1;background:#fff">
+          <select class="filter-select" id="user-role-filter" onchange="loadUsers()">
+            <option value="">All roles</option>
+            <option value="registered_user">Registered user</option>
+            <option value="police_officer">Police officer</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div class="form-card">
+          <div id="users-list"><div style="padding:30px;text-align:center;color:var(--muted)">Loading…</div></div>
+        </div>
+        <div id="users-pagination" style="display:flex;gap:6px;margin-top:12px;justify-content:center"></div>
+      </div>
+
+      <!-- AUDIT LOG TAB -->
+      <div id="tab-audit" style="display:none">
+        <div style="display:flex;gap:8px;margin-bottom:14px">
+          <select class="filter-select" id="audit-action-filter" onchange="loadAudit()">
+            <option value="">All actions</option>
+            <option value="login">login</option>
+            <option value="submit_case">submit_case</option>
+            <option value="verify_case">verify_case</option>
+            <option value="update_case_status">update_case_status</option>
+            <option value="send_case_alert">send_case_alert</option>
+            <option value="approve_id_verification">approve_id_verification</option>
+            <option value="update_user_role">update_user_role</option>
+            <option value="merge_cases">merge_cases</option>
+          </select>
+        </div>
+        <div class="form-card">
+          <div id="audit-list"><div style="padding:30px;text-align:center;color:var(--muted)">Loading…</div></div>
+        </div>
+        <div id="audit-pagination" style="display:flex;gap:6px;margin-top:12px;justify-content:center"></div>
+      </div>
+
+      <!-- SUBSCRIBERS TAB -->
+      <div id="tab-subs" style="display:none">
+        <div class="form-card">
+          <div class="card-header"><h3><i class="ti ti-bell"></i> Alert subscribers</h3></div>
+          <div id="subs-list"><div style="padding:30px;text-align:center;color:var(--muted)">Loading…</div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Role change modal -->
+<div class="modal-overlay" id="role-modal" onclick="closeRoleModal(event)" style="z-index:600">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header"><h2>Change user role</h2><button class="modal-close" onclick="closeRoleModal()"><i class="ti ti-x"></i></button></div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Changing roles grants or restricts access immediately. Use with care.</p>
+      <div class="field"><label>User</label><input id="role-user-name" class="field-input" disabled></div>
+      <input type="hidden" id="role-user-id">
+      <div class="field"><label>New role</label>
+        <select id="role-select" class="field-select">
+          <option value="registered_user">Registered user</option>
+          <option value="police_officer">Police officer</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <div id="police-extra" style="display:none">
+        <div class="field"><label>Badge number</label><input id="role-badge" class="field-input" placeholder="e.g. 12345"></div>
+        <div class="field"><label>Police station</label><input id="role-station" class="field-input" placeholder="e.g. Westlands"></div>
+        <div class="field"><label>County</label><input id="role-county" class="field-input" placeholder="e.g. Nairobi"></div>
+      </div>
+      <button class="modal-btn" onclick="saveRole()">Save role</button>
+    </div>
+  </div>
+</div>
+
+<!-- Auth modal -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal">
+    <div class="modal-header"><h2 id="modal-title">Admin sign in</h2><button class="modal-close" onclick="closeModal()"><i class="ti ti-x"></i></button></div>
+    <div class="modal-tabs"><button class="modal-tab active" id="tab-login" onclick="switchTab('login')">Log in</button><button class="modal-tab" id="tab-signup" onclick="switchTab('signup')">Create account</button></div>
+    <div class="modal-body" id="panel-login">
+      <div class="field"><label>Email</label><input type="email" id="login-email"></div>
+      <div class="field"><label>Password</label><input type="password" id="login-password"></div>
+      <button class="modal-btn" onclick="doLogin()">Sign in</button>
+      <div id="login-error" style="margin-top:10px;font-size:13px;color:var(--red);display:none;text-align:center"></div>
+    </div>
+    <div class="modal-body" id="panel-signup" style="display:none">
+      <div class="field"><label>Email</label><input type="email" id="signup-email"></div>
+      <div class="field"><label>Password</label><input type="password" id="signup-password"></div>
+      <div class="field"><label>Confirm password</label><input type="password" id="signup-password-confirm"></div>
+      <button class="modal-btn" onclick="doSignup()">Create account</button>
+      <div id="signup-error" style="margin-top:10px;font-size:13px;color:var(--red);display:none;text-align:center"></div>
+    </div>
+    <div class="modal-footer"><p>Admin accounts are restricted.</p></div>
+  </div>
+</div>
+<div class="toast" id="toast"><i class="ti ti-check"></i><span id="toast-msg"></span></div>
+
+<script src="assets/js/ui.js"></script>
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+  const supabase = createClient('https://vyxaxoilyilrvrwgyfil.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ5eGF4b2lseWlscnZyd2d5ZmlsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5MTQzODksImV4cCI6MjA5ODQ5MDM4OX0.ZBfLgdjd5OvaFq7PKtN17hQWh2s37s86WIPpqB0Wz3M');
+  const { data:{session} } = await supabase.auth.getSession();
+  window._session = session;
+  const isAdmin = session?.user?.app_metadata?.role === 'admin';
+  if (!isAdmin) { document.getElementById('access-denied').style.display=''; }
+  else { document.getElementById('admin-content').style.display=''; document.getElementById('nav-login-btn').textContent=(session.user.user_metadata?.full_name||'Admin').split(' ')[0]; loadStats(); loadIdQueue(); }
+
+  async function authFetch(url,opts={}) {
+    return fetch(url,{...opts,headers:{...(opts.headers||{}),Authorization:`Bearer ${session.access_token}`,'Content-Type':'application/json'}});
+  }
+
+  async function loadStats() {
+    const d = await authFetch('/api/admin/stats').then(r=>r.json()).catch(()=>({}));
+    document.getElementById('as-users').textContent   = d.users?.total||'—';
+    document.getElementById('as-police').textContent  = (d.users?.police_officer||0)+' officers';
+    document.getElementById('as-active').textContent  = (d.cases?.reported||0)+(d.cases?.under_investigation||0);
+    document.getElementById('as-unverified').textContent = (d.cases?.unverified||0)+' unverified';
+    document.getElementById('as-pending-id').textContent = d.users?.pending_id||'—';
+    document.getElementById('as-subs').textContent    = d.alerts?.subscribers||'—';
+    document.getElementById('cnt-id').textContent     = d.users?.pending_id||'0';
+  }
+
+  async function loadIdQueue() {
+    const d = await authFetch('/api/admin/id-verification').then(r=>r.json());
+    const items = d.pending||[];
+    if (!items.length) { document.getElementById('id-list').innerHTML='<div style="padding:30px;text-align:center;color:var(--muted)">No pending submissions. All verified! ✓</div>'; return; }
+    document.getElementById('id-list').innerHTML = items.map(u=>
+      `<div class="id-doc-row">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:500;margin-bottom:2px">${u.full_name}</div>
+          <div style="font-size:11px;color:var(--muted)">${u.email} · Submitted ${new Date(u.created_at).toLocaleDateString()}</div>
+        </div>
+        ${u.document_url?`<a href="${u.document_url}" target="_blank" class="act-btn"><i class="ti ti-id-badge"></i> View ID</a>`:''}
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+          <select id="approve-role-${u.id}" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:5px" onchange="togglePoliceExtra('${u.id}',this.value)">
+            <option value="registered_user">Approve as User</option>
+            <option value="police_officer">Approve as Police Officer</option>
+          </select>
+          <div id="extra-${u.id}" style="display:none">
+            <input placeholder="Badge #" id="badge-${u.id}" style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:5px;width:80px;margin-right:4px">
+            <input placeholder="Station" id="station-${u.id}" style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:5px;width:130px;margin-right:4px">
+            <input placeholder="County" id="county-${u.id}" style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:5px;width:90px">
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="act-btn approve" onclick="approveId('${u.id}')"><i class="ti ti-check"></i> Approve</button>
+            <button class="act-btn danger" onclick="rejectId('${u.id}')"><i class="ti ti-x"></i> Reject</button>
+          </div>
+        </div>
+      </div>`
+    ).join('');
+  }
+
+  window.togglePoliceExtra = (uid, role) => {
+    document.getElementById('extra-'+uid).style.display = role==='police_officer' ? '' : 'none';
+  };
+
+  window.approveId = async (uid) => {
+    const role = document.getElementById('approve-role-'+uid)?.value||'registered_user';
+    const body = { role, user_id: uid };
+    if (role==='police_officer') {
+      body.badge_number   = document.getElementById('badge-'+uid)?.value||'';
+      body.police_station = document.getElementById('station-'+uid)?.value||'';
+      body.county         = document.getElementById('county-'+uid)?.value||'';
+    }
+    const res = await authFetch(`/api/admin/id-verification/${uid}/approve`,{method:'POST',body:JSON.stringify(body)});
+    const data = await res.json();
+    showToast(res.ok ? data.message : (data.error||'Approval failed.'), !res.ok);
+    if (res.ok) { loadIdQueue(); loadStats(); }
+  };
+
+  window.rejectId = async (uid) => {
+    const reason = prompt('Reason for rejection (will be sent to user):','The document provided could not be verified.');
+    if (!reason) return;
+    const res = await authFetch(`/api/admin/id-verification/${uid}/reject`,{method:'POST',body:JSON.stringify({reason})});
+    const data = await res.json();
+    showToast(res.ok ? data.message : (data.error||'Rejection failed.'), !res.ok);
+    if (res.ok) loadIdQueue();
+  };
+
+  let _usersPage = 1;
+  window.loadUsers = async (page=1) => {
+    _usersPage = page;
+    const q    = document.getElementById('user-search')?.value||'';
+    const role = document.getElementById('user-role-filter')?.value||'';
+    const params = new URLSearchParams({limit:20,page});
+    if (q) params.set('q',q);
+    if (role) params.set('role',role);
+    const data = await authFetch(`/api/admin/users?${params}`).then(r=>r.json());
+    const users = data.users||[];
+    const ROLE_BADGE = { registered_user:'<span class="badge badge-closed">User</span>', police_officer:'<span class="badge badge-inv">Police</span>', admin:'<span class="badge badge-urgent">Admin</span>' };
+    document.getElementById('users-list').innerHTML = users.length
+      ? users.map(u=>`<div class="user-row">
+          <div class="queue-avatar av-blue">${(u.full_name||'?').charAt(0)}</div>
+          <div class="user-info">
+            <div class="user-name">${u.full_name||'—'} ${ROLE_BADGE[u.role]||''} ${u.id_verified?'<span class="badge badge-found" style="font-size:10px">✓ ID</span>':''}</div>
+            <div class="user-meta">${u.email} · ${u.county||'—'} · Joined ${new Date(u.created_at).toLocaleDateString()}</div>
+          </div>
+          <div class="row-actions">
+            <button class="act-btn" onclick="openRoleModal('${u.id}','${u.full_name}','${u.role}')"><i class="ti ti-pencil"></i> Role</button>
+            ${u.id_verification_status==='pending'?`<button class="act-btn approve" onclick="showTab('id')"><i class="ti ti-id-badge"></i> ID pending</button>`:''}
+          </div>
+        </div>`).join('')
+      : '<div style="padding:30px;text-align:center;color:var(--muted)">No users found.</div>';
+
+    // Pagination
+    const total = data.total||0;
+    const pages = Math.ceil(total/20);
+    let ph = '';
+    for (let i=1;i<=pages&&i<=10;i++) ph += `<button class="page-btn${i===page?' active':''}" onclick="loadUsers(${i})">${i}</button>`;
+    document.getElementById('users-pagination').innerHTML = ph;
+  };
+
+  let _auditPage = 1;
+  window.loadAudit = async (page=1) => {
+    _auditPage = page;
+    const action = document.getElementById('audit-action-filter')?.value||'';
+    const params = new URLSearchParams({limit:30,page});
+    if (action) params.set('action',action);
+    const data = await authFetch(`/api/admin/audit-log?${params}`).then(r=>r.json());
+    const logs = data.logs||[];
+    document.getElementById('audit-list').innerHTML = logs.length
+      ? logs.map(l=>`<div class="audit-row">
+          <span class="method-badge method-${l.http_method||'GET'}">${l.http_method||'—'}</span>
+          <span style="font-weight:500;min-width:200px">${l.action||'—'}</span>
+          <span style="color:var(--muted);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${l.user_email||'anon'} · ${l.path||''}</span>
+          <span style="color:var(--muted);flex-shrink:0">${new Date(l.created_at).toLocaleString()}</span>
+          <span class="badge ${l.status_code<300?'badge-found':l.status_code<400?'badge-inv':'badge-urgent'}" style="flex-shrink:0;font-size:10px">${l.status_code||'—'}</span>
+        </div>`).join('')
+      : '<div style="padding:30px;text-align:center;color:var(--muted)">No audit entries found.</div>';
+
+    const pages = Math.ceil((data.total||0)/30);
+    let ph = '';
+    for (let i=1;i<=pages&&i<=10;i++) ph += `<button class="page-btn${i===page?' active':''}" onclick="loadAudit(${i})">${i}</button>`;
+    document.getElementById('audit-pagination').innerHTML = ph;
+  };
+
+  async function loadSubscribers() {
+    const data = await authFetch('/api/alerts/subscribers?limit=50').then(r=>r.json());
+    const subs = data.subscribers||[];
+    document.getElementById('subs-list').innerHTML = subs.length
+      ? `<table class="queue-table">
+          <thead><tr><th>Email</th><th>Counties</th><th>Status</th><th>Subscribed</th></tr></thead>
+          <tbody>${subs.map(s=>`<tr>
+            <td>${s.email}</td>
+            <td>${(s.counties||[]).join(', ')}</td>
+            <td>${s.is_active?'<span class="badge badge-found">Active</span>':'<span class="badge badge-closed">Inactive</span>'}</td>
+            <td>${new Date(s.created_at).toLocaleDateString()}</td>
+          </tr>`).join('')}</tbody>
+        </table>`
+      : '<div style="padding:30px;text-align:center;color:var(--muted)">No subscribers yet.</div>';
+  }
+
+  window.showTab = (tab) => {
+    ['id','users','audit','subs'].forEach(t=>{
+      document.getElementById('tab-'+t).style.display = t===tab?'':'none';
+      document.getElementById('atab-'+t).classList.toggle('active',t===tab);
+    });
+    if (tab==='users') loadUsers();
+    if (tab==='audit') loadAudit();
+    if (tab==='subs')  loadSubscribers();
+  };
+
+  window.openRoleModal = (id, name, currentRole) => {
+    document.getElementById('role-user-id').value   = id;
+    document.getElementById('role-user-name').value = name;
+    document.getElementById('role-select').value    = currentRole;
+    document.getElementById('police-extra').style.display = currentRole==='police_officer' ? '' : 'none';
+    document.getElementById('role-modal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  };
+  window.closeRoleModal = (e) => {
+    if (e && e.target !== document.getElementById('role-modal')) return;
+    document.getElementById('role-modal').classList.remove('open');
+    document.body.style.overflow = '';
+  };
+
+  document.getElementById('role-select').addEventListener('change', function() {
+    document.getElementById('police-extra').style.display = this.value==='police_officer' ? '' : 'none';
+  });
+
+  window.saveRole = async () => {
+    const uid  = document.getElementById('role-user-id').value;
+    const role = document.getElementById('role-select').value;
+    if (role==='police_officer') {
+      const badge   = document.getElementById('role-badge').value.trim();
+      const station = document.getElementById('role-station').value.trim();
+      const county  = document.getElementById('role-county').value.trim();
+      const res = await authFetch(`/api/auth/verify-police`,{method:'POST',body:JSON.stringify({user_id:uid,badge_number:badge,police_station:station,county})});
+      const data = await res.json();
+      showToast(res.ok ? 'Police account verified.' : (data.error||'Failed.'), !res.ok);
+    } else {
+      const res = await authFetch('/api/auth/role',{method:'PATCH',body:JSON.stringify({user_id:uid,role})});
+      const data = await res.json();
+      showToast(res.ok ? data.message : (data.error||'Failed.'), !res.ok);
+    }
+    closeRoleModal();
+    loadUsers();
+  };
+
+  window.doLogin = async () => {
+    const {error} = await supabase.auth.signInWithPassword({email:document.getElementById('login-email').value.trim(),password:document.getElementById('login-password').value});
+    if(error){document.getElementById('login-error').textContent='Incorrect email or password.';document.getElementById('login-error').style.display='block';return;}
+    closeModal();showToast('Signed in.');setTimeout(()=>location.reload(),800);
+  };
+  window.doSignup = async () => {
+    const password = document.getElementById('signup-password').value;
+    const confirmPassword = document.getElementById('signup-password-confirm').value;
+    if (password !== confirmPassword) {
+      document.getElementById('signup-error').textContent = 'Passwords do not match.';
+      document.getElementById('signup-error').style.display = 'block';
+      return;
+    }
+    const {error} = await supabase.auth.signUp({email:document.getElementById('signup-email').value.trim(),password,options:{emailRedirectTo:`${window.location.origin}/index.html`}});
+    if(error){document.getElementById('signup-error').textContent=error.message;document.getElementById('signup-error').style.display='block';return;}
+    closeModal();showToast('Account created. Contact an existing admin to grant admin access.');
+  };
+</script>
+</body>
+</html>
