@@ -8,17 +8,17 @@ gotrue==2.4.4           # Supabase Auth client (bundled with supabase)
 
 # JWT verification
 PyJWT==2.8.0
-cryptography==42.0.8    # needed by PyJWT for RS256 (Supabase uses HS256 but good to have)
+cryptography==45.0.0    # needed by PyJWT for RS256 (Supabase uses HS256 but good to have)
 
 # Email
 aiosmtplib==3.0.1
 
 # File processing
-Pillow==10.3.0          # image validation + resizing
+Pillow==11.3.0          # image validation + resizing
 python-multipart==0.0.9 # multipart form / file upload parsing
 
 # Fuzzy deduplication
-rapidfuzz==3.9.1
+rapidfuzz==3.13.0
 
 # Security / sanitisation
 bleach==6.1.0
